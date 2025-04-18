@@ -21,11 +21,16 @@ const doorStyles = [
     range: "Lorimer",
     collection: "Allure",
     name: "berlin",
+    minWidth: 870,
+    maxWidth: 980,
+    minHeight: 1800,
+    maxHeight: 2000,
     styleAssets: {
       texture: "horizontal",
       molding: "berlin"
     },
-    glazingOptions: ["clear", "adina"],
+    sidescreenOptions: ["solid", "clear", "berlin", "midrail", "half-clear-top","half-clear-bottom"],
+    glazingOptions: ["clear","adina"],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-mid": "letterplate-mid-A",
@@ -34,23 +39,6 @@ const doorStyles = [
     },
     handleOptions: ["lever"]
   },
-  {
-    range: "Timberluxe",
-    collection: "Country",
-    name: "Fuji",
-    styleAssets: {
-      texture: "none",
-      molding: "berlin"
-    },
-    glazingOptions: ["clear", "adina"],
-    letterplateOptions: {
-      "letterplate-none": "letterplate-none",
-      "letterplate-mid": "letterplate-mid-A",
-      "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A"
-    },
-    handleOptions: ["lever"]
-  }
 ];
 
 // Configuration choices
@@ -61,8 +49,6 @@ const configurations = [
   { value: "single-both", name: "Left & Right Sidescreens" }
 ];
 
-let selectedLeftPanel = "none";
-let selectedRightPanel = "none";
 
 // Optional display name lookups
 const styleDisplayNames = {
@@ -91,7 +77,7 @@ const finishDisplayNames = {
 };
 const finishColorMap = {
   "Brilliant White": { color: "rgb(240,240,240)", texture: null, textureBlend: "source-over" },
-  "Rosewood": { color: "rgb(42, 21, 19)", texture: getImageURL("woodgrain"), textureBlend: "multiply"},
+  "Rosewood": { color: "rgb(84, 37, 33)", texture: getImageURL("woodgrain"), textureBlend: "multiply"},
   "Golden Oak": {color: "rgb(170, 104, 52)",texture: getImageURL("woodgrain"),textureBlend: "multiply"},
   "Anthracite Grey": {color: "rgb(69,69,74)",texture: null,textureBlend: "multiply"},
   "Chartwell Green": {color: "rgb(165, 194, 172)",texture: null, textureBlend: "multiply"}
@@ -101,7 +87,12 @@ const finishColorMap = {
 // 1) Textures
 const textureDefs = [
   { id: "none", image: null },
-  { id: "woodgrain", image: "woodgrain"}
+  {
+    id: "horizontal",
+    image: "horizontal",
+    marginX: 35,
+    marginY: 20
+  }
 ];
 
 // 2) Moldings
@@ -110,31 +101,175 @@ const moldingDefs = [
   {
     id: "berlin",
     image: "berlin",
-    xFactor: 0.38,
-    yFactor: 0.15,
-    widthFactor: 0.24,
-    heightFactor: 0.44
+    width: 75,
+    height: 260,
+    align: "center",
+    offsetY: 250
   }
   // Additional moldings ...
 ];
 
+
 // 3) Glazing definitions
 const glazingDefs = [
   {
+    id: "adina",
+    image: "adina",
+    width: 48,
+    height: 232,
+    align: "center",   
+    offsetY: 266      
+},
+{
+  id: "clear",
+  image: "clear",
+  width: 48,
+  height: 230,
+  align: "center",   
+  offsetY: 266        
+}
+];
+
+
+const sidescreenStyleDefs = [
+  {
+    id: "berlin",
+    name: "Berlin",
+    molding: "berlin",
+    glazing: "match",
+    texture: "match"
+  },
+  {
+    id: "clear",
+    name: "Clear",
+    molding: null,
+    glazing: "clear-full",
+    texture: "null"
+  },
+  {
+    id: "solid",
+    name: "Solid",
+    molding: null,
+    glazing: null,
+    texture: "match"
+  },
+  {
+    id: "midrail",
+    name: "Midrail",
+    glazing: null,
+    molding: null,
+    texture: "horizontal",
+    panelElements: [
+    {
+      id: "half-divider",
+      rect: {
+        x: 0,
+        width: "full",
+        height: 35,
+        align: "centerY"
+      },
+      options: {
+        imageURL: getImageURL("frame-top"),
+        flipHorizontal: false,
+        flipVertical: false
+      }
+    }
+  ]
+  },
+{
+  id: "half-clear-top",
+  name: "Half Clear Top",
+  glazing: "half-clear-top",
+  molding: null,
+  texture: "horizontal",
+  panelElements: [
+  {
+    id: "half-divider",
+    rect: {
+      x: 0,
+      width: "full",
+      height: 35,
+      align: "centerY"
+    },
+    options: {
+      imageURL: getImageURL("frame-top"),
+      flipHorizontal: false,
+      flipVertical: false
+    }
+  }
+]
+},
+{
+  id: "half-clear-bottom",
+  name: "Half Clear Bottom",
+  glazing: "half-clear-bottom",
+  molding: null,
+  texture: "horizontal",
+  panelElements: [
+    {
+      id: "half-divider",
+      rect: {
+        x: 0,
+        width: "full",
+        height: 35,
+        align: "centerY"
+      },
+      options: {
+        imageURL: getImageURL("frame-top"),
+        flipHorizontal: false,
+        flipVertical: false
+      }
+    }
+  ]
+}
+];
+
+const sidescreenMoldingDefs = [
+  {
+    id: "berlin",
+    image: "berlin",
+    width: 75,
+    height: 260,
+    align: "center",
+    offsetY: 250
+  }
+];
+
+
+
+const sidescreenGlazingDefs = [
+  {
+    id: "clear-full",
+    image: "clear",
+    margin: 35
+  },
+  {
+    id: "half-clear-top",
+    image: "clear",
+    halfPanelMargins: true,
+    clearPosition: "top"
+  },
+  {
+    id: "half-clear-bottom",
+    image: "clear",
+    halfPanelMargins: true,
+    clearPosition: "bottom"
+  },
+  {
     id: "clear",
     image: "clear",
-    xFactor: 0.42,
-    yFactor: 0.168,
-    widthFactor: 0.16,
-    heightFactor: 0.40
+    width: 48,
+    height: 232,
+    align: "center",   
+    offsetY: 266
   },
   {
     id: "adina",
     image: "adina",
-    xFactor: 0.42,
-    yFactor: 0.168,
-    widthFactor: 0.16,
-    heightFactor: 0.40
+    width: 48,
+    height: 232,
+    align: "center",   
+    offsetY: 266
   }
 ];
 
@@ -159,15 +294,39 @@ const handleDisplayNames = { lever: "Lever" };
 
 // Coordinates for letterplates
 const letterplateDefs = [
-  { id: "letterplate-mid-A", coordinates: { x: 125, y: 595 }, width: 150, height: 35 },
-  { id: "letterplate-low-A", coordinates: { x: 125, y: 650 }, width: 150, height: 35 },
-  { id: "letterplate-ground-A", coordinates: { x: 125, y: 710 }, width: 150, height: 35 },
-  // Add any other variants
+  {
+    id: "letterplate-mid-A",
+    width: 100,
+    height: 25,
+    align: "center",          // can be "left", "right", or "center"
+    offsetY: 200              // from bottom
+  },
+  {
+    id: "letterplate-low-A",
+    width: 150,
+    height: 35,
+    align: "center",
+    offsetY: 300
+  },
+  {
+    id: "letterplate-ground-A",
+    width: 150,
+    height: 35,
+    align: "center",
+    offsetY: 200
+  }
 ];
 
 // Coordinates for handles
 const handleDefs = [
-  { id: "lever", coordinates: { x: 309, y: 380 }, width: 60, height: 100 }
+  {
+    id: "lever",
+    width: 40,
+    height: 65,
+    align: "right",           // can be "left" or "right"
+    offsetX: 22,              // from edge
+    offsetY: 250              // from bottom
+  }
 ];
 
 const hardwareColorMap = {
@@ -182,6 +341,8 @@ const glazingDisplayNames = {
   adina: "Adina"
 };
 
+
+
 // Steps & wizard state
 const stepIDs = [
   "configuration-step",
@@ -192,37 +353,24 @@ const stepIDs = [
   "hardware-step"
 ];
 
-// let currentStep = 1;
-// let stepsCompleted = Array(stepIDs.length).fill(true);
-
-let selectedConfiguration = "single";
-let selectedStyle = "berlin";
-let selectedSideScreenStyle = "none";
-let selectedExternalFinish = finishes[2];
-let selectedInternalFinish = finishes[0];
-let selectedGlazing = "adina";
-let selectedLetterplate = "none";
-let selectedHardwareColor = hardwareColorOptions[0];
-let selectedHandle = "lever";
-let currentView = "external";
-
 // Range selection for the start screen
 export const state = {
   currentStep: 1,
   stepsCompleted: Array(6).fill(true),
   selectedRange: doorRanges[0],
   selectedStyle: "berlin",
-  selectedConfiguration: "single",
-  selectedGlazing: "adina",
-  selectedLetterplate: "none",
+  selectedConfiguration: "single-left",
+  selectedGlazing: "clear",
+  selectedLetterplate: null,
   selectedHardwareColor: "gold",
   selectedHandle: "lever",
   selectedExternalFinish: finishes[2],
   selectedInternalFinish: finishes[0],
-  selectedLeftPanel: "none",
-  selectedRightPanel: "none",
-  selectedSideScreenStyle: "none",
+  selectedLeftPanel: null,
+  selectedRightPanel: null,
+  selectedSideScreenStyle: "berlin",
   backgroundImg: null,
+  currentView: "external",
 
 };
 
@@ -233,22 +381,10 @@ export {
     doorRanges,
     doorStyles,
     imageOverloads,
-    selectedLeftPanel,
-    selectedRightPanel,
-    selectedStyle,
     styleDisplayNames,
     glazingDefs,
     finishDisplayNames,
     finishColorMap,
-    selectedExternalFinish,
-    selectedInternalFinish,
-    selectedGlazing,
-    selectedLetterplate,
-    selectedHardwareColor,
-    selectedHandle,
-    selectedConfiguration,
-    selectedSideScreenStyle,
-    currentView,
     handleDefs,
     hardwareColorMap,
     moldingDefs,
@@ -261,7 +397,11 @@ export {
     hardwareColorOptions,
     stepIDs,
     finishes,
-    handleOptions
+    handleOptions,
+    sidescreenMoldingDefs,
+    sidescreenGlazingDefs,
+    sidescreenStyleDefs,
+    
 
 };
 

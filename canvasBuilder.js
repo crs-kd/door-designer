@@ -1,9 +1,6 @@
-import { getImageURL } from "./utils.js";
-import { loadImage } from "./utils.js";
-import { tintImage } from "./utils.js";
-import { mirrorCanvas } from "./utils.js";
-import { goToNextStep } from "./utils.js";
-import { goToPreviousStep } from "./utils.js";
+
+import { getImageURL, loadImage, tintImage, mirrorCanvas, goToNextStep, goToPreviousStep, getDoorPanelDimensionsFromInput, getSidescreenDimensionsFromInput} from "./utils.js";
+
 
 import { populateSidescreenStyleThumbnails } from "./ui.js";
 import { populateConfigurationOptions } from "./ui.js";
@@ -35,6 +32,10 @@ import { moldingDefs } from "./data.js";
 import { finishDisplayNames } from "./data.js";
 import { doorRanges } from "./data.js";
 import { state } from "./data.js";
+import { sidescreenStyleDefs } from "./data.js";
+import { sidescreenMoldingDefs } from "./data.js";
+import { sidescreenGlazingDefs } from "./data.js";
+
 
 import {
   doorOverlayMouseDown,
@@ -50,16 +51,44 @@ import {
 } from "./visualiser.js";
 
 
+function getElementPosition(id, panelWidth, panelHeight, width, height) {
+  // Default: center element
+  let x = (panelWidth - width) / 2;
+  let y = (panelHeight - height) / 2;
+
+  // Lock handle to bottom-left or bottom-right
+  if (id.includes('handle')) {
+    x = id.includes('right') ? panelWidth - width - 40 : 40;  // 40px offset from edge
+    y = panelHeight - height - 100; // 100px from bottom
+  }
+
+  // Lock letterplate to horizontal center and fixed height from bottom
+  if (id.includes('letterplate')) {
+    x = (panelWidth - width) / 2;
+    y = panelHeight - height - 400; // 400px from bottom
+  }
+
+  // Glazing or molding: center using factor if available
+  if (id.includes('glazing') || id.includes('molding')) {
+    // Already centered by default
+  }
+
+  return { x, y };
+}
+
 /*
    ---------------------------------------------
-   Build the Door Panel (Frame, Corner Caps, etc.)
-   EXACTLY as original code so sidescreens remain correct
+   Build the Door Panel
    ---------------------------------------------
 */
-async function buildPanelComposite(panelWidth, panelHeight, finish) {
+async function buildPanelComposite(panelWidth, panelHeight, finish, ) {
   // For finish, we have a { color, texture, textureBlend }, from finishColorMap
   let baseColor = finish.color || "#ccc";
   let textureURL = finish.texture || null;
+
+  const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
+
+
 
   // Step 1: draw the door panel "frame" elements onto an offscreen
   const elementsCanvas = document.createElement("canvas");
@@ -70,51 +99,45 @@ async function buildPanelComposite(panelWidth, panelHeight, finish) {
   // The same original frame segments
   const doorPanelElements = [
     {
+      id: "top-frame",
+      mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
+      options: { imageURL: getImageURL("frame-top"), flipHorizontal: false, flipVertical: false, rotation: 0 }
+    },
+    {
       id: "left-vertical-frame",
-      rectFactor: { x: 0, y: 0.05, width: 0.13, height: 1 },
+      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame"), flipHorizontal: false, flipVertical: false, rotation: 0 }
     },
     {
       id: "right-vertical-frame",
-      rectFactor: { x: 0.87, y: 0, width: 0.13, height: 1 },
+      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame"), flipHorizontal: true, flipVertical: false, rotation: 0 }
     },
     {
-      id: "bottom-left-corner",
-      rectFactor: { x: 0, y: 0.97, width: 0.13, height: 0.032 },
-      options: { imageURL: getImageURL("frame-cap"), flipHorizontal: false, flipVertical: false, rotation: 0 }
-    },
-    {
-      id: "bottom-right-corner",
-      rectFactor: { x: 0.87, y: 0.97, width: 0.13, height: 0.032 },
-      options: { imageURL: getImageURL("frame-cap"), flipHorizontal: true, flipVertical: false, rotation: 0 }
-    },
-    {
-      id: "bottom-threshold",
-      rectFactor: { x: 0.13, y: 0.97, width: 0.74, height: 0.032 },
-      options: { imageURL: getImageURL("threshold"), flipHorizontal: false, flipVertical: false, rotation: 0 }
-    },
-    {
       id: "top-left-corner",
-      rectFactor: { x: 0, y: 0, width: 0.13, height: 0.06 },
+      rect: { x: 0, y: 0, width: 35, height: 35 },
       options: { imageURL: getImageURL("corner"), flipHorizontal: false, flipVertical: false, rotation: 0 }
     },
     {
       id: "top-right-corner",
-      rectFactor: { x: 0.87, y: 0, width: 0.13, height: 0.06 },
+      rect: { x: "right", y: 0, width: 35, height: 35 },
       options: { imageURL: getImageURL("corner"), flipHorizontal: true, flipVertical: false, rotation: 0 }
-    },
-    {
-      id: "top-frame",
-      rectFactor: { x: 0.125, y: 0, width: 0.75, height: 0.06 },
-      options: { imageURL: getImageURL("frame-top"), flipHorizontal: false, flipVertical: false, rotation: 0 }
     }
+
   ];
 
   // Helper to draw each piece
-  async function drawPanelElement(ctx, rect, options) {
+  async function drawPanelElement(ctx, rectDef, options, panelWidth, panelHeight) {
     const img = await loadImage(options.imageURL);
     if (!img) return;
+  
+    const rect = {
+      width: rectDef.width,
+      height: rectDef.height,
+      x: rectDef.x === "right" ? panelWidth - rectDef.width : rectDef.x,
+      y: rectDef.y === "bottom" ? panelHeight - rectDef.height : rectDef.y
+    };
+  
     ctx.save();
     ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
     if (options.rotation) {
@@ -129,15 +152,41 @@ async function buildPanelComposite(panelWidth, panelHeight, finish) {
 
   // Draw them
   for (let elem of doorPanelElements) {
-    const rect = {
-      x: elem.rectFactor.x * panelWidth,
-      y: elem.rectFactor.y * panelHeight,
-      width: elem.rectFactor.width * panelWidth,
-      height: elem.rectFactor.height * panelHeight
-    };
+    let rect;
+  
+    if (elem.rect) {
+      rect = {
+        x: elem.rect.x === "right" ? panelWidth - elem.rect.width : elem.rect.x,
+        y: elem.rect.y === "bottom" ? panelHeight - elem.rect.height : elem.rect.y,
+        width: elem.rect.width,
+        height: elem.rect.height
+      };
+    } else if (elem.mixedRect) {
+      const m = elem.mixedRect;
+      rect = {
+        x: m.x !== undefined
+          ? (m.x === "right" ? panelWidth - m.width : m.x)
+          : (m.xFactor !== undefined ? m.xFactor * panelWidth : 0),
+        y: m.y !== undefined
+          ? (m.y === "bottom" ? panelHeight - m.height : m.y)
+          : (m.yFactor !== undefined ? m.yFactor * panelHeight : 0),
+        width: m.width !== undefined ? m.width : (m.widthFactor * panelWidth),
+        height: m.height !== undefined ? m.height : (m.heightFactor * panelHeight)
+      };
+    } else if (elem.rectFactor) {
+      rect = {
+        x: elem.rectFactor.x * panelWidth,
+        y: elem.rectFactor.y * panelHeight,
+        width: elem.rectFactor.width * panelWidth,
+        height: elem.rectFactor.height * panelHeight
+      };
+    } else {
+      console.warn("Missing shape data for panel element:", elem);
+      continue;
+    }
+  
     await drawPanelElement(elementsCtx, rect, elem.options);
   }
-
   // Step 2: combine with base color & optional texture
   const finalCanvas = document.createElement("canvas");
   finalCanvas.width = panelWidth;
@@ -159,21 +208,48 @@ async function buildPanelComposite(panelWidth, panelHeight, finish) {
     }
   }
 
-  // Optional threshold or highlight overlay
-  const thresholdOverlayConfig = {
+  if (styleObj && styleObj.styleAssets && styleObj.styleAssets.texture) {
+    const grooveDef = textureDefs.find(t => t.id === styleObj.styleAssets.texture);
+    if (grooveDef && grooveDef.image) {
+      const grooveImg = await loadImage(getImageURL(grooveDef.image));
+      if (grooveImg) {
+        // Margins
+        const marginX = grooveDef.marginX ?? grooveDef.margin ?? 0;
+        const marginY = grooveDef.marginY ?? grooveDef.margin ?? 0;
+  
+        const grooveX = marginX;
+        const grooveY = marginY;
+        const grooveW = panelWidth - marginX * 2;
+        const grooveH = panelHeight; - marginY * 2;
+  
+        finalCtx.globalCompositeOperation = "multiply"; // or "overlay"
+        finalCtx.drawImage(grooveImg, grooveX, grooveY, grooveW, grooveH);
+        finalCtx.globalCompositeOperation = "source-over";
+      }
+    }
+  }
+
+  // Multiply the frame elements onto it
+  finalCtx.globalCompositeOperation = "multiply";
+  finalCtx.drawImage(elementsCanvas, 0, 0);
+  finalCtx.globalCompositeOperation = "source-over";
+
+   // Optional threshold or highlight overlay
+   const thresholdOverlayConfig = {
     visible: true,
     xFactor: 0.07,
     yFactor: 0.989,
     widthFactor: 0.86,
-    heightFactor: 0.02,
-    fillStyle: "rgb(228, 228, 228)",
+    height: 20,                      // <--- fixed height
+    fillStyle: "rgb(236, 236, 236)",
     blend: null
   };
+  
   if (thresholdOverlayConfig.visible) {
     const threshX = thresholdOverlayConfig.xFactor * panelWidth;
     const threshY = thresholdOverlayConfig.yFactor * panelHeight;
     const threshW = thresholdOverlayConfig.widthFactor * panelWidth;
-    const threshH = thresholdOverlayConfig.heightFactor * panelHeight;
+    const threshH = thresholdOverlayConfig.height ?? (thresholdOverlayConfig.heightFactor * panelHeight);
     finalCtx.globalCompositeOperation = thresholdOverlayConfig.blend;
     finalCtx.fillStyle = thresholdOverlayConfig.fillStyle;
     finalCtx.fillRect(threshX, threshY, threshW, threshH);
@@ -184,25 +260,21 @@ async function buildPanelComposite(panelWidth, panelHeight, finish) {
     xFactor: 0.13,
     yFactor: 0.960,
     widthFactor: 0.74,
-    heightFactor: 0.008,
-    fillStyle: "rgba(255, 255, 255, 0.5)",
+    height: 5, // 
+    fillStyle: "rgba(255, 255, 255, 0.35)",
     blend: "overlay"
   };
+  
   if (panelOverlayConfig.visible) {
     const ovX = panelOverlayConfig.xFactor * panelWidth;
     const ovY = panelOverlayConfig.yFactor * panelHeight;
     const ovW = panelOverlayConfig.widthFactor * panelWidth;
-    const ovH = panelOverlayConfig.heightFactor * panelHeight;
+    const ovH = panelOverlayConfig.height ?? (panelOverlayConfig.heightFactor * panelHeight); // fallback
     finalCtx.globalCompositeOperation = panelOverlayConfig.blend;
     finalCtx.fillStyle = panelOverlayConfig.fillStyle;
     finalCtx.fillRect(ovX, ovY, ovW, ovH);
     finalCtx.globalCompositeOperation = "source-over";
   }
-
-  // Multiply the frame elements onto it
-  finalCtx.globalCompositeOperation = "multiply";
-  finalCtx.drawImage(elementsCanvas, 0, 0);
-  finalCtx.globalCompositeOperation = "source-over";
 
   return finalCanvas;
 }
@@ -214,86 +286,125 @@ async function buildPanelComposite(panelWidth, panelHeight, finish) {
    EXACTLY as original so it doesn't break
    ---------------------------------------------
 */
-async function buildSidePanelComposite(targetWidth, targetHeight, finish) {
-  let baseColor = finish.color || "#ccc";
-  let textureURL = finish.texture || null;
-  let textureBlend = finish.textureBlend || "source-over";
 
-  // We'll draw the sidescreen "frame" elements on an offscreen
+async function buildSidePanelComposite(targetWidth, targetHeight, finish) {
+  const baseColor = finish.color || "#ccc";
+  const textureURL = finish.texture || null;
+  const textureBlend = finish.textureBlend || "source-over";
+
+  const sidescreenStyle = sidescreenStyleDefs.find(s => s.id === state.selectedSidescreenStyle);
+  console.log("Selected sidescreen style:", state.selectedSideScreenStyle, sidescreenStyle);
+
+  async function drawPanelElement(ctx, rect, options) {
+    const img = await loadImage(options.imageURL);
+    if (!img) return;
+  
+    ctx.save();
+    ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
+  
+    if (options.rotation) {
+      ctx.rotate((options.rotation * Math.PI) / 180);
+    }
+  
+    const scaleX = options.flipHorizontal ? -1 : 1;
+    const scaleY = options.flipVertical ? -1 : 1;
+    ctx.scale(scaleX, scaleY);
+    ctx.drawImage(img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
+  
+    ctx.restore();
+  }
+  // Offscreen canvas for frame elements
   const elementsCanvas = document.createElement("canvas");
   elementsCanvas.width = targetWidth;
   elementsCanvas.height = targetHeight;
   const elementsCtx = elementsCanvas.getContext("2d");
 
-  // The original sidescreen panel segments
   const sidescreenPanelElements = [
-    {
-      id: "sidescreen-top-frame",
-      rectFactor: { x: 0.125, y: 0, width: 0.75, height: 0.06 },
-      options: { imageURL: getImageURL("frame-top"), flipHorizontal: false, flipVertical: false, rotation: 0 }
-    },
-    {
-      id: "sidescreen-bottom-horizontal",
-      rectFactor: { x: 0, y: 0.94, width: 1, height: 0.06 },
-      options: { imageURL: getImageURL("frame-top"), flipHorizontal: false, flipVertical: true, rotation: 0 }
-    },
-    {
-      id: "sidescreen-left-vertical",
-      rectFactor: { x: 0, y: 0, width: 0.25, height: 1 },
-      options: { imageURL: getImageURL("frame"), flipHorizontal: false, flipVertical: false, rotation: 0 }
-    },
-    {
-      id: "sidescreen-right-vertical",
-      rectFactor: { x: 0.75, y: 0, width: 0.25, height: 1 },
-      options: { imageURL: getImageURL("frame"), flipHorizontal: true, flipVertical: false, rotation: 0 }
-    },
-    {
-      id: "sidescreen-top-left-corner",
-      rectFactor: { x: 0, y: 0, width: 0.25, height: 0.06 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: false, flipVertical: false, rotation: 0 }
-    },
-    {
-      id: "sidescreen-top-right-corner",
-      rectFactor: { x: 0.75, y: 0, width: 0.25, height: 0.06 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: true, flipVertical: false, rotation: 0 }
-    },
-    {
-      id: "sidescreen-bottom-left-corner",
-      rectFactor: { x: 0, y: 0.94, width: 0.25, height: 0.06 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: false, flipVertical: true, rotation: 0 }
-    },
-    {
-      id: "sidescreen-bottom-right-corner",
-      rectFactor: { x: 0.75, y: 0.94, width: 0.25, height: 0.06 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: true, flipVertical: true, rotation: 0 }
-    }
+    
+    { id: "top-frame", mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 }, options: { imageURL: getImageURL("frame-top") } },
+  { id: "bottom-frame", mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 }, options: { imageURL: getImageURL("frame-top"), flipVertical: true } },
+  
+  // Left/right vertical frames: fixed width, scaling height
+  { id: "left-frame", mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 }, options: { imageURL: getImageURL("frame") } },
+  { id: "right-frame", mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 }, options: { imageURL: getImageURL("frame"), flipHorizontal: true } },
+  
+  // Corners: fixed position and size
+  { id: "top-left", rect: { x: 0, y: 0, width: 35, height: 35 }, options: { imageURL: getImageURL("corner") } },
+  { id: "top-right", rect: { x: "right", y: 0, width: 35, height: 35 }, options: { imageURL: getImageURL("corner"), flipHorizontal: true } },
+  { id: "bottom-left", rect: { x: 0, y: "bottom", width: 35, height: 35 }, options: { imageURL: getImageURL("corner"), flipVertical: true } },
+  { id: "bottom-right", rect: { x: "right", y: "bottom", width: 35, height: 35 }, options: { imageURL: getImageURL("corner"), flipHorizontal: true, flipVertical: true } },
+  
   ];
 
-  // Reuse the panelElement drawer
-  async function drawPanelElement(ctx, rect, options) {
-    const img = await loadImage(options.imageURL);
-    if (!img) return;
-    ctx.save();
-    ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
-    const scaleX = options.flipHorizontal ? -1 : 1;
-    const scaleY = options.flipVertical ? -1 : 1;
-    ctx.scale(scaleX, scaleY);
-    ctx.drawImage(img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
-    ctx.restore();
+  
+  // Append extra style-defined elements if present
+  if (sidescreenStyle?.panelElements) {
+    sidescreenPanelElements.push(...sidescreenStyle.panelElements);
+    console.log("Extra sidescreen elements:", sidescreenStyle.panelElements);
   }
+// Draw sidescreen frames
+for (let el of sidescreenPanelElements) {
+  let rect;
 
-  // Draw them
-  for (let el of sidescreenPanelElements) {
-    const rect = {
+  if (el.rect) {
+    const r = el.rect;
+
+    const width = r.width === "full" ? targetWidth : r.width;
+    let x = r.x;
+    if (x === "right") x = targetWidth - width;
+    else if (typeof x !== "number") x = 0;
+
+    let y;
+    if (r.align === "centerY") {
+      y = (targetHeight - r.height) / 2;
+    } else if (r.y === "bottom") {
+      y = targetHeight - r.height;
+    } else {
+      y = r.y ?? 0;
+    }
+
+    rect = {
+      x,
+      y,
+      width,
+      height: r.height
+    };
+  } else if (el.mixedRect) {
+    const m = el.mixedRect;
+    rect = {
+      x: m.x !== undefined
+        ? (m.x === "right" ? targetWidth - m.width : m.x)
+        : (m.xFactor !== undefined ? m.xFactor * targetWidth : 0),
+      y: m.y !== undefined
+        ? (m.y === "bottom" ? targetHeight - m.height : m.y)
+        : (m.yFactor !== undefined ? m.yFactor * targetHeight : 0),
+      width: m.width !== undefined ? m.width : (m.widthFactor * targetWidth),
+      height: m.height !== undefined ? m.height : (m.heightFactor * targetHeight)
+    };
+  } else if (el.rectFactor) {
+    rect = {
       x: el.rectFactor.x * targetWidth,
       y: el.rectFactor.y * targetHeight,
       width: el.rectFactor.width * targetWidth,
       height: el.rectFactor.height * targetHeight
     };
-    await drawPanelElement(elementsCtx, rect, el.options);
+  } else {
+    console.warn("Missing shape data in sidescreen element:", el);
+    continue;
   }
 
-  // Combine onto final
+  await drawPanelElement(elementsCtx, rect, el.options);
+}
+
+  // Draw the sidescreen style texture (if applicable)
+  let grooveId = sidescreenStyle?.texture;
+
+if (grooveId === "match") {
+  const matchedStyle = doorStyles.find(s => s.name === state.selectedStyle);
+  grooveId = matchedStyle?.styleAssets?.texture;
+}
+
+  // Create final canvas
   const finalCanvas = document.createElement("canvas");
   finalCanvas.width = targetWidth;
   finalCanvas.height = targetHeight;
@@ -303,7 +414,7 @@ async function buildSidePanelComposite(targetWidth, targetHeight, finish) {
   finalCtx.fillStyle = baseColor;
   finalCtx.fillRect(0, 0, targetWidth, targetHeight);
 
-  // If there's a texture
+  // Draw finish texture
   if (textureURL) {
     const textureImg = await loadImage(textureURL);
     if (textureImg) {
@@ -313,9 +424,101 @@ async function buildSidePanelComposite(targetWidth, targetHeight, finish) {
     }
   }
 
+  // Draw groove texture from style (if applicable)
+  const grooveDef = textureDefs.find(t => t.id === grooveId);
+  if (grooveDef && grooveDef.image) {
+    const grooveImg = await loadImage(getImageURL(grooveDef.image));
+    if (grooveImg) {
+      const marginX = grooveDef.marginX ?? grooveDef.margin ?? 0;
+      const marginY = grooveDef.marginY ?? grooveDef.margin ?? 0;
+  
+      const grooveX = marginX;
+      const grooveY = marginY;
+      const grooveW = targetWidth - marginX * 2;
+      const grooveH = targetHeight - marginY * 2;
+  
+      finalCtx.globalCompositeOperation = "multiply";
+      finalCtx.drawImage(grooveImg, grooveX, grooveY, grooveW, grooveH);
+      finalCtx.globalCompositeOperation = "source-over";
+    }
+  }
+
+  // Draw frame elements
   finalCtx.globalCompositeOperation = "multiply";
   finalCtx.drawImage(elementsCanvas, 0, 0);
   finalCtx.globalCompositeOperation = "source-over";
+
+  // ✅ Draw molding from sidescreen style
+  if (sidescreenStyle?.molding) {
+    const moldDef = sidescreenMoldingDefs.find(m => m.id === sidescreenStyle.molding);
+    if (moldDef && moldDef.image) {
+      const img = await loadImage(getImageURL(moldDef.image));
+      if (img) {
+        const x = moldDef.align === "left"
+          ? 40
+          : moldDef.align === "right"
+          ? targetWidth - moldDef.width - 40
+          : (targetWidth - moldDef.width) / 2;
+        const y = targetHeight - moldDef.height - moldDef.offsetY;
+
+        finalCtx.drawImage(img, x, y, moldDef.width, moldDef.height);
+      }
+    }
+  }
+
+// ✅ Draw glazing from sidescreen style
+let glazingId = sidescreenStyle?.glazing;
+if (glazingId === "match") {
+  glazingId = state.selectedGlazing;
+}
+
+const glazeDef = sidescreenGlazingDefs.find(g => g.id === glazingId);
+if (glazeDef && glazeDef.image) {
+  const img = await loadImage(getImageURL(glazeDef.image));
+  if (img) {
+    // 🔁 Margin-based full-glazing
+    if ("margin" in glazeDef || "marginX" in glazeDef || "marginY" in glazeDef || glazeDef.halfPanelMargins) {
+      let marginX = glazeDef.marginX ?? glazeDef.margin ?? 0;
+      let topMargin = glazeDef.marginY ?? glazeDef.margin ?? 0;
+      let bottomMargin = topMargin;
+
+      if (glazeDef.halfPanelMargins) {
+        marginX = 35;
+        topMargin = 35;
+
+        if (glazeDef.clearPosition === "bottom") {
+          // Bottom clear → shift margin to top
+          topMargin = (targetHeight / 2) + (35 / 2);
+          bottomMargin = 35;
+        } else {
+          // Default is top clear
+          bottomMargin = (targetHeight / 2) + (35 / 2);
+        }
+      }
+
+      const gx = marginX;
+      const gy = topMargin;
+      const gw = targetWidth - marginX * 2;
+      const gh = targetHeight - topMargin - bottomMargin;
+
+      finalCtx.drawImage(img, gx, gy, gw, gh);
+    } else {
+      // 🎯 Fixed size, aligned glazing
+      const gw = glazeDef.width;
+      const gh = glazeDef.height;
+
+      const gx = glazeDef.align === "left"
+        ? 40
+        : glazeDef.align === "right"
+        ? targetWidth - gw - 40
+        : (targetWidth - gw) / 2;
+
+      const gy = targetHeight - gh - glazeDef.offsetY;
+
+      finalCtx.drawImage(img, gx, gy, gw, gh);
+    }
+  }
+}
 
   return finalCanvas;
 }
@@ -329,8 +532,12 @@ async function buildSidePanelComposite(targetWidth, targetHeight, finish) {
 */
 async function updateCanvasPreview() {
   try {
-    const panelHeight = 600; // pick any size you like
-    const panelWidth = 300;  // ratio 1:2, or adjust as you wish
+    const { displayPixels, scaleFactor } = getDoorPanelDimensionsFromInput();
+    const panelHeight = displayPixels.height;
+    const panelWidth = displayPixels.width
+    const sidescreenDims = getSidescreenDimensionsFromInput();
+const leftWidth = sidescreenDims.left.displayPixels;
+const rightWidth = sidescreenDims.right.displayPixels;
 
     // Determine finish data for external or internal
     const finishKey = (state.currentView === "external") ? state.selectedExternalFinish : state.selectedInternalFinish;
@@ -340,10 +547,10 @@ async function updateCanvasPreview() {
     let leftSidePanel = null;
     let rightSidePanel = null;
     if (state.selectedConfiguration === "single-left" || state.selectedConfiguration === "single-both") {
-      leftSidePanel = await buildSidePanelComposite(panelWidth * 0.5, panelHeight, finishData);
+      leftSidePanel = await buildSidePanelComposite(leftWidth, panelHeight, finishData);
     }
     if (state.selectedConfiguration === "single-right" || state.selectedConfiguration === "single-both") {
-      rightSidePanel = await buildSidePanelComposite(panelWidth * 0.5, panelHeight, finishData);
+      rightSidePanel = await buildSidePanelComposite(rightWidth, panelHeight, finishData);
     }
 
     // Build main door panel
@@ -352,8 +559,8 @@ async function updateCanvasPreview() {
     // Prepare preview canvas
     const previewCanvas = document.getElementById("previewCanvas");
     let totalWidth = panelWidth;
-    if (leftSidePanel) totalWidth += panelWidth * 0.5;
-    if (rightSidePanel) totalWidth += panelWidth * 0.5;
+    if (leftSidePanel) totalWidth += leftWidth;
+    if (rightSidePanel) totalWidth += rightWidth;
     previewCanvas.width = totalWidth;
     previewCanvas.height = panelHeight;
     const ctx = previewCanvas.getContext("2d");
@@ -363,193 +570,33 @@ async function updateCanvasPreview() {
     let offsetX = 0;
     if (leftSidePanel) {
       ctx.drawImage(leftSidePanel, 0, 0);
-      offsetX += panelWidth * 0.5;
+      offsetX += leftWidth;
     }
-
+    
     // Draw main door panel
     ctx.drawImage(panelCanvas, offsetX, 0);
 
     // 1) Look up style
     const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
-
-    // 2) If style has a texture, draw it from textureDefs
-    if (styleObj && styleObj.styleAssets && styleObj.styleAssets.texture) {
-      let texDef = textureDefs.find(t => t.id === styleObj.styleAssets.texture);
-      if (texDef && texDef.image) {
-        let textureImg = await loadImage(getImageURL(texDef.image));
-        if (textureImg) {
-          // We'll fill the entire door area with this texture 
-          // or you can define coords in textureDefs if needed
-          ctx.drawImage(textureImg, offsetX, 0, panelWidth, panelHeight);
-        }
-      }
-    }
-
-    // 3) If style has a molding, draw it from moldingDefs
+  
+    // 2) If style has a molding, draw it from moldingDefs
     if (styleObj && styleObj.styleAssets && styleObj.styleAssets.molding) {
       let moldDef = moldingDefs.find(m => m.id === styleObj.styleAssets.molding);
       if (moldDef) {
         let moldImg = await loadImage(getImageURL(moldDef.image));
         if (moldImg) {
-          const moldW = panelWidth * moldDef.widthFactor;
-          const moldH = panelHeight * moldDef.heightFactor;
-          const moldX = offsetX + (panelWidth * moldDef.xFactor);
-          const moldY = panelHeight * moldDef.yFactor;
-          ctx.drawImage(moldImg, moldX, moldY, moldW, moldH);
-        }
-      }
-    }
-
-    // 4) Glazing
-    if (state.selectedGlazing !== "none") {
-      let glazeDef = glazingDefs.find(g => g.id === state.selectedGlazing);
-      if (glazeDef && glazeDef.image) {
-        const glazeImg = await loadImage(getImageURL(glazeDef.image));
-        if (glazeImg) {
-          const gw = panelWidth * glazeDef.widthFactor;
-          const gh = panelHeight * glazeDef.heightFactor;
-          const gx = offsetX + (panelWidth * glazeDef.xFactor);
-          const gy = panelHeight * glazeDef.yFactor;
-          ctx.drawImage(glazeImg, gx, gy, gw, gh);
-        }
-      }
-    }
-
-    // 5) Letterplate
-    if (state.selectedLetterplate && state.selectedLetterplate !== "letterplate-none") {
-      let variantId = state.selectedLetterplate;
-      if (styleObj && styleObj.letterplateOptions && styleObj.letterplateOptions[state.selectedLetterplate]) {
-        variantId = styleObj.letterplateOptions[state.selectedLetterplate];
-      }
-      let lpDef = letterplateDefs.find(def => def.id === variantId);
-      if (lpDef) {
-        let lpImg = await loadImage(getImageURL("letterplate"));
-        if (lpImg) {
-          const scaleFactorX = panelWidth / 400; // same approach as your original
-          const scaleFactorY = panelHeight / 800;
-          let tintedLp = tintImage(lpImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
-          const lpX = offsetX + lpDef.coordinates.x * scaleFactorX;
-          const lpY = lpDef.coordinates.y * scaleFactorY;
-          const lpW = lpDef.width * scaleFactorX;
-          const lpH = lpDef.height * scaleFactorY;
-          ctx.drawImage(tintedLp, lpX, lpY, lpW, lpH);
-        }
-      }
-    }
-
-    // 6) Handle
-    if (state.selectedHandle && state.selectedHandle !== "none") {
-      let hDef = handleDefs.find(def => def.id === state.selectedHandle);
-      if (hDef) {
-        let hImg = await loadImage(getImageURL(state.selectedHandle));
-        if (hImg) {
-          const sfx = panelWidth / 400;
-          const sfy = panelHeight / 800;
-          let tintedH = tintImage(hImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
-          const hX = offsetX + hDef.coordinates.x * sfx;
-          const hY = hDef.coordinates.y * sfy;
-          const hW = hDef.width * sfx;
-          const hH = hDef.height * sfy;
-          ctx.drawImage(tintedH, hX, hY, hW, hH);
-
-          // shading if wanted
-          let shadingImg = await loadImage(getImageURL("lever"));
-          if (shadingImg) {
-            ctx.globalCompositeOperation = "multiply";
-            ctx.drawImage(shadingImg, hX, hY, hW, hH);
-            ctx.globalCompositeOperation = "source-over";
-          }
-        }
-      }
-    }
-
-    // 7) Right sidescreen if present
-    if (rightSidePanel) {
-      ctx.drawImage(rightSidePanel, offsetX + panelWidth, 0);
-    }
-
-    // 8) If internal, mirror
-    if (state.currentView === "internal") {
-      mirrorCanvas(previewCanvas);
-    }
-  } catch (err) {
-    console.error("Error in updateCanvasPreview:", err);
-  }
-}
-
-
-/*
-   ---------------------------------------------
-   COMPOSITE & SAVE
-   ---------------------------------------------
-   Similar logic as updateCanvasPreview, but we do it on an offscreen 
-   so we can produce a final full-size PNG.
-*/
-async function compositeAndSave() {
-  try {
-    // For simplicity, do the same scale as preview:
-    const panelHeight = 1200; // double for higher resolution
-    const panelWidth = 600;  
-    const finishKey = (state.currentView === "external") ? state.selectedExternalFinish : state.selectedInternalFinish;
-    const finishData = finishColorMap[finishKey] || { color: "#ddd", texture: null, textureBlend: "source-over" };
-
-    let leftSidePanel = null;
-    let rightSidePanel = null;
-    if (state.selectedConfiguration === "single-left" || state.selectedConfiguration === "single-both") {
-      leftSidePanel = await buildSidePanelComposite(panelWidth * 0.5, panelHeight, finishData);
-    }
-    if (state.selectedConfiguration === "single-right" || state.selectedConfiguration === "single-both") {
-      rightSidePanel = await buildSidePanelComposite(panelWidth * 0.5, panelHeight, finishData);
-    }
-
-    const panelCanvas = await buildPanelComposite(panelWidth, panelHeight, finishData);
-
-    // Offscreen
-    let totalWidth = panelWidth;
-    if (leftSidePanel) totalWidth += panelWidth * 0.5;
-    if (rightSidePanel) totalWidth += panelWidth * 0.5;
-
-    const offscreen = document.createElement("canvas");
-    offscreen.width = totalWidth;
-    offscreen.height = panelHeight;
-    const ctx = offscreen.getContext("2d");
-    ctx.clearRect(0, 0, totalWidth, panelHeight);
-
-    // Draw left side
-    let offsetX = 0;
-    if (leftSidePanel) {
-      ctx.drawImage(leftSidePanel, 0, 0);
-      offsetX += panelWidth * 0.5;
-    }
-
-    // Draw main door
-    ctx.drawImage(panelCanvas, offsetX, 0);
-
-    // Style logic
-    const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
-    if (styleObj && styleObj.styleAssets) {
-      // texture
-      if (styleObj.styleAssets.texture) {
-        let texDef = textureDefs.find(t => t.id === styleObj.styleAssets.texture);
-        if (texDef && texDef.image) {
-          let texImg = await loadImage(getImageURL(texDef.image));
-          if (texImg) {
-            ctx.drawImage(texImg, offsetX, 0, panelWidth, panelHeight);
-          }
-        }
-      }
-      // molding
-      if (styleObj.styleAssets.molding) {
-        let moldDef = moldingDefs.find(m => m.id === styleObj.styleAssets.molding);
-        if (moldDef) {
-          let moldImg = await loadImage(getImageURL(moldDef.image));
-          if (moldImg) {
-            const moldW = panelWidth * moldDef.widthFactor;
-            const moldH = panelHeight * moldDef.heightFactor;
-            const moldX = offsetX + panelWidth * moldDef.xFactor;
-            const moldY = panelHeight * moldDef.yFactor;
-            ctx.drawImage(moldImg, moldX, moldY, moldW, moldH);
-          }
+          const mw = moldDef.width;
+          const mh = moldDef.height;
+    
+          const moldingX = moldDef.align === "left"
+            ? offsetX + 40
+            : moldDef.align === "right"
+            ? offsetX + (panelWidth - mw - 40)
+            : offsetX + (panelWidth - mw) / 2;
+    
+          const moldingY = panelHeight - mh - moldDef.offsetY;
+    
+          ctx.drawImage(moldImg, moldingX, moldingY, mw, mh);
         }
       }
     }
@@ -560,61 +607,87 @@ async function compositeAndSave() {
       if (glazeDef && glazeDef.image) {
         let glzImg = await loadImage(getImageURL(glazeDef.image));
         if (glzImg) {
-          const gw = panelWidth * glazeDef.widthFactor;
-          const gh = panelHeight * glazeDef.heightFactor;
-          const gx = offsetX + panelWidth * glazeDef.xFactor;
-          const gy = panelHeight * glazeDef.yFactor;
-          ctx.drawImage(glzImg, gx, gy, gw, gh);
+          const gw = glazeDef.width;
+          const gh = glazeDef.height;
+          const glazingX = glazeDef.align === "left"
+            ? offsetX + 40
+            : glazeDef.align === "right"
+            ? offsetX + (panelWidth - gw - 40)
+            : offsetX + (panelWidth - gw) / 2;
+          const glazingY = panelHeight - gh - glazeDef.offsetY;
+          
+          ctx.drawImage(glzImg, glazingX, glazingY, gw, gh);
         }
       }
     }
 
-    // Letterplate
-    if (state.selectedLetterplate && state.selectedLetterplate !== "letterplate-none") {
-      let variantId = state.selectedLetterplate;
-      if (styleObj && styleObj.letterplateOptions && styleObj.letterplateOptions[state.selectedLetterplate]) {
-        variantId = styleObj.letterplateOptions[state.selectedLetterplate];
-      }
-      let lpDef = letterplateDefs.find(def => def.id === variantId);
-      if (lpDef) {
-        let lpImg = await loadImage(getImageURL("letterplate"));
-        if (lpImg) {
-          const scaleFactorX = panelWidth / 400;
-          const scaleFactorY = panelHeight / 800;
-          let tintedLp = tintImage(lpImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
-          const lpX = offsetX + lpDef.coordinates.x * scaleFactorX;
-          const lpY = lpDef.coordinates.y * scaleFactorY;
-          const lpW = lpDef.width * scaleFactorX;
-          const lpH = lpDef.height * scaleFactorY;
-          ctx.drawImage(tintedLp, lpX, lpY, lpW, lpH);
-        }
+   // Letterplate
+if (state.selectedLetterplate && state.selectedLetterplate !== "letterplate-none") {
+  let variantId = state.selectedLetterplate;
+
+  if (styleObj && styleObj.letterplateOptions && styleObj.letterplateOptions[state.selectedLetterplate]) {
+    variantId = styleObj.letterplateOptions[state.selectedLetterplate];
+  }
+
+  const lpDef = letterplateDefs.find(def => def.id === variantId);
+  if (lpDef) {
+    const lpImg = await loadImage(getImageURL("letterplate"));
+    const overlayImg = await loadImage(getImageURL("letterplate"));
+
+    if (lpImg) {
+      const lpW = lpDef.width;
+      const lpH = lpDef.height;
+
+      const lpX = lpDef.align === "left"
+        ? offsetX + 40
+        : lpDef.align === "right"
+        ? offsetX + (panelWidth - lpW - 40)
+        : offsetX + (panelWidth - lpW) / 2;
+
+      const lpY = panelHeight - lpH - lpDef.offsetY;
+
+      const tintedLp = tintImage(lpImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
+      ctx.drawImage(tintedLp, lpX, lpY, lpW, lpH);
+
+      if (overlayImg) {
+        const overlayOpacity = 0.45
+        ctx.globalAlpha = overlayOpacity;
+        ctx.globalCompositeOperation = "multiply";
+        ctx.drawImage(overlayImg, lpX, lpY, lpW, lpH);
+        ctx.globalAlpha = 1.0; // reset
+        ctx.globalCompositeOperation = "source-over";
       }
     }
+  }
+}
 
-    // Handle
-    if (state.selectedHandle && state.selectedHandle !== "none") {
-      let hDef = handleDefs.find(def => def.id === state.selectedHandle);
-      if (hDef) {
-        let hImg = await loadImage(getImageURL(state.selectedHandle));
-        if (hImg) {
-          const sfx = panelWidth / 400;
-          const sfy = panelHeight / 800;
-          let tintedH = tintImage(hImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
-          const hX = offsetX + hDef.coordinates.x * sfx;
-          const hY = hDef.coordinates.y * sfy;
-          const hW = hDef.width * sfx;
-          const hH = hDef.height * sfy;
-          ctx.drawImage(tintedH, hX, hY, hW, hH);
 
-          let shadingImg = await loadImage(getImageURL("lever"));
-          if (shadingImg) {
-            ctx.globalCompositeOperation = "multiply";
-            ctx.drawImage(shadingImg, hX, hY, hW, hH);
-            ctx.globalCompositeOperation = "source-over";
-          }
-        }
+   if (state.selectedHandle && state.selectedHandle !== "none") {
+  const hDef = handleDefs.find(def => def.id === state.selectedHandle);
+  if (hDef) {
+    const handleImg = await loadImage(getImageURL(state.selectedHandle));
+    if (handleImg) {
+      const hW = hDef.width;
+      const hH = hDef.height;
+
+      const hX = hDef.align === "left"
+        ? offsetX + hDef.offsetX
+        : offsetX + (panelWidth - hW - hDef.offsetX);
+
+      const hY = panelHeight - hH - hDef.offsetY;
+
+      const tintedHandle = tintImage(handleImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
+      ctx.drawImage(tintedHandle, hX, hY, hW, hH);
+
+      const shadingImg = await loadImage(getImageURL(`${state.selectedHandle}`));
+      if (shadingImg) {
+        ctx.globalCompositeOperation = "multiply";
+        ctx.drawImage(shadingImg, hX, hY, hW, hH);
+        ctx.globalCompositeOperation = "source-over";
       }
     }
+  }
+}
 
     // Right side
     if (rightSidePanel) {
@@ -623,7 +696,7 @@ async function compositeAndSave() {
 
     // Flip for internal
     if (state.currentView === "internal") {
-      mirrorCanvas(offscreen);
+      mirrorCanvas(previewCanvas);
     }
 
     // Produce file name
@@ -632,14 +705,6 @@ async function compositeAndSave() {
     const glazingName = glazingDisplayNames[state.selectedGlazing] || state.selectedGlazing;
     const fileName = `${styleName}, ${finishName}, ${glazingName} Glass.png`;
 
-    // Download
-    const dataURL = offscreen.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.href = dataURL;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   } catch (err) {
     console.error("Error in compositeAndSave:", err);
   }
@@ -712,7 +777,7 @@ function addThumbnailClick(type) {
         populateGlazingThumbnails(); 
         populateLetterplateThumbnails();
       } else if (type === "sidescreenStyle") {
-        state.selectedSideScreenStyle = value;
+        state.selectedSidescreenStyle = value;
       } else if (type === "finish") {
         state.selectedExternalFinish = value;
         state.currentView = "external";
@@ -899,6 +964,40 @@ document.addEventListener("DOMContentLoaded", () => {
   updateSummary();
   updateNavigationControls();
 });
+
+function compositeAndSave() {
+  try {
+    const previewCanvas = document.getElementById("previewCanvas");
+    if (!previewCanvas) {
+      console.error("Preview canvas not found");
+      return;
+    }
+
+    // Flip for internal
+    if (state.currentView === "internal") {
+      mirrorCanvas(previewCanvas);
+    }
+
+    const styleName = styleDisplayNames[state.selectedStyle] || state.selectedStyle || "Style";
+    const finishKey = (state.currentView === "external") ? state.selectedExternalFinish : state.selectedInternalFinish;
+    const finishName = finishDisplayNames[finishKey] || finishKey || "Finish";
+    const glazingName = glazingDisplayNames[state.selectedGlazing] || state.selectedGlazing || "Glass";
+
+    const safeFileName = `${styleName}-${finishName}-${glazingName}.png`.replace(/[\/\\?%*:|"<>]/g, '-');
+
+    const dataURL = previewCanvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = safeFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    console.error("Error in compositeAndSave:", err);
+  }
+}
+
+
 export {
     buildPanelComposite,
     buildSidePanelComposite,

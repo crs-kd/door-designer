@@ -2,25 +2,19 @@ import { getImageURL } from "./utils.js";
 import { addThumbnailClick } from "./canvasBuilder.js";
 import {
   doorStyles,
-  selectedStyle,
+  
   styleDisplayNames,
   finishDisplayNames,
   finishes,
-  selectedExternalFinish,
-  selectedInternalFinish,
   glazingDisplayNames,
-  selectedGlazing,
   letterplateDisplayNames,
-  selectedLetterplate,
   handleDisplayNames,
-  selectedHandle,
   hardwareColorDisplayNames,
-  selectedHardwareColor,
   state,
   configurations,
   hardwareColorOptions,
   handleOptions,
-  currentView,
+
   doorCollections,
 } from "./data.js";
 
@@ -30,16 +24,16 @@ import {
    ---------------------------------------------
 */
 function updateSummary() {
-  const styleObj = doorStyles.find(s => s.name === selectedStyle);
+  const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
   let styleText = styleObj ? (styleDisplayNames[styleObj.name] || styleObj.name) : "None";
 
-  let finKey = (currentView === "external") ? selectedExternalFinish : selectedInternalFinish;
+  let finKey = (state.currentView === "external") ? state.selectedExternalFinish : state.selectedInternalFinish;
   let finName = finishDisplayNames[finKey] || finKey;
 
-  let glazingName = glazingDisplayNames[selectedGlazing] || selectedGlazing;
-  let letterplateText = letterplateDisplayNames[selectedLetterplate] || selectedLetterplate;
-  let handleText = handleDisplayNames[selectedHandle] 
-    ? `${handleDisplayNames[selectedHandle]} (${hardwareColorDisplayNames[selectedHardwareColor]})`
+  let glazingName = glazingDisplayNames[state.selectedGlazing] || state.selectedGlazing;
+  let letterplateText = letterplateDisplayNames[state.selectedLetterplate] || state.selectedLetterplate;
+  let handleText = handleDisplayNames[state.selectedHandle] 
+    ? `${handleDisplayNames[state.selectedHandle]} (${hardwareColorDisplayNames[state.selectedHardwareColor]})`
     : "None";
 
   document.getElementById("summary").innerHTML =
@@ -52,7 +46,7 @@ function updateSummary() {
 
 function updateViewIndicator() {
   document.getElementById("currentViewText").textContent =
-    "Current View: " + (currentView === "external" ? "External" : "Internal");
+    "Current View: " + (state.currentView === "external" ? "External" : "Internal");
 }
 
 
@@ -76,7 +70,7 @@ function populateStylesByRange() {
       grouped[col].forEach(st => {
         const disp = styleDisplayNames[st.name] || st.name;
         html += `
-          <div class="thumbnail" data-type="style" data-value="${st.name}">
+          <div class="thumbnail start-thumb" data-type="style" data-value="${st.name}">
             <img src="${getImageURL(st.name + "-thumb")}" alt="${disp}">
             <p>${disp}</p>
           </div>
@@ -102,14 +96,18 @@ function populateConfigurationOptions() {
 
 function populateSidescreenStyleThumbnails() {
   const container = document.getElementById("sidescreen-style-list");
-  // The user might define real sidescreen styles. We'll just put placeholders:
-  const sidescreenStyles = ["clear", "berlin", "lisbon", "madrid", "paris"];
-  let html = sidescreenStyles.map(val => `
+  const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
+
+  // Use style-defined sidescreenOptions or fallback to just 'solid'
+  const sidescreenStyles = styleObj?.sidescreenOptions || ["solid"];
+
+  const html = sidescreenStyles.map(val => `
     <div class="thumbnail" data-type="sidescreenStyle" data-value="${val}">
       <img src="${getImageURL(val + "-thumb")}" alt="${val}">
       <p>${val}</p>
     </div>
   `).join("");
+
   container.innerHTML = html;
   addThumbnailClick("sidescreenStyle");
 }
@@ -138,7 +136,7 @@ function populateInternalFinishThumbnails() {
 
 function populateGlazingThumbnails() {
   const container = document.getElementById("glazing-list");
-  const styleObj = doorStyles.find(s => s.name === selectedStyle);
+  const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
   const glz = styleObj && styleObj.glazingOptions ? styleObj.glazingOptions : [];
   let html = glz.map(val => `
     <div class="thumbnail" data-type="glazing" data-value="${val}">
@@ -152,7 +150,7 @@ function populateGlazingThumbnails() {
 
 function populateLetterplateThumbnails() {
   const container = document.getElementById("letterplate-list");
-  const styleObj = doorStyles.find(s => s.name === selectedStyle);
+  const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
   if (!styleObj || !styleObj.letterplateOptions) {
     container.innerHTML = "";
     return;
