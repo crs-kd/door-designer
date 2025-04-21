@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Door Designer</title>
+    <!-- External Fonts and Icons -->
+    <link rel="stylesheet" href="https://use.typekit.net/kql4iya.css" />
+    <script
+      src="https://kit.fontawesome.com/917bdeabdb.js"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      /* Global Reset & Base Styles */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100vh;
+        font-family: proxima-nova, sans-serif;
+      }
+
+      /* -------------------------------------------------
+         Start Screen
+      ------------------------------------------------- */
+      .start-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #041244;
+        background-image: url("https://crs-kd.github.io/door-designer/background.jpg");
+        background-size: cover;
+        background-blend-mode: multiply;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 1;
+        transition: opacity 0.5s ease;
+      }
+      .start-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .start-content {
+        text-align: center;
+        color: #fff;
+      }
+      .start-logo {
+        max-width: 250px !important;
+        margin-bottom: 20px;
+      }
+      .start-content h2 {
+        font-family: span, sans-serif;
+        font-weight: 300;
+        font-size: 1.5rem;
+        margin-bottom: 14px;
+      }
+      .start-range-container {
+        display: flex;
+        gap: 50px;
+        margin-top: 30px;
+        justify-content: center;
+      }
+
+      .range-thumbnail {
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+      .range-thumbnail:hover {
+        transform: scale(1.01);
+        transition: transform 0.3s ease;
+      }
+      .range-thumbnail img {
+        border-radius: 8px;
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto 10px;
+      }
+
+      /* -------------------------------------------------
+         Main Designer Container (3 Panels)
+      ------------------------------------------------- */
+      .door-designer-container {
+        display: flex;
+        width: 100%;
+        height: 100vh;
+      }
+
+      /* Panel 1: Menu Container */
+      .menu-container {
+        width: 220px;
+        background-color: #fff;
+        border-right: 1px solid #ccc;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+      .menu-container .logo {
+        text-align: center;
+        padding: 15px 25px;
+      }
+      .menu-container .logo img {
+        max-width: 160px;
+        width: 100%;
+      }
+      .step-menu {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid #ccc;
+      }
+
+      .step-menu-item {
+        padding: 15px 20px;
+        color: #999;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.3s ease;
+      }
+      .step-menu-item.active {
+        color: #041244;
+        background-color: #f5f7fa;
+        border-right: 5px solid #f29300;
+      }
+      .step-menu-item:hover {
+        background-color: #f5f7fa;
+      }
+
+      .panel-size-inputs {
+        display: flex;
+        justify-content: space-between;
+        text-align: center;
+        padding: 10px 20px;
+        border-top: 1px solid #ccc;
+      }
+      .panel-size-inputs input {
+        text-align: center;
+        width: 50%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        margin-right: 10px;
+      }
+      .panel-size-inputs label {
+        font-size: 0.7rem;
+        color: #041244;
+        margin-right: 10px;
+      }
+
+      .panel-size-inputs input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
+
+      .nav-buttons {
+        margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-top: 1px solid #ccc;
+      }
+      .nav-buttons button {
+        background: none;
+        border: none;
+        color: #041244;
+        font-size: 0.9rem;
+        cursor: pointer;
+        padding: 10px;
+      }
+      .nav-buttons button:hover {
+        text-decoration: underline;
+      }
+      .nav-buttons button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* Panel 2: Thumbnail Container */
+      .thumbnail-container {
+        position: relative;
+        overflow: auto;
+        width: 240px;
+        background-color: #fff;
+        border-right: 1px solid #ccc;
+        padding: 20px;
+        box-sizing: border-box;
+        transition: opacity 0.5s ease;
+      }
+      /* Only the active step group is visible */
+      .thumbnail-container .step {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        opacity: 0;
+        display: none;
+        transition: opacity 0.5s ease;
+      }
+      .thumbnail-container .step.step-active {
+        opacity: 1;
+        display: block;
+        position: relative;
+      }
+      .thumbnail-container h3.collection-title {
+        margin: 20px 0 10px;
+        font-size: 1.3rem;
+      }
+      .grid-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .thumbnail {
+        aspect-ratio: 1 / 1;
+        background-color: #f5f7fa;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        border: 2px solid transparent;
+      }
+
+      .thumbnail:hover {
+        transform: translateY(-2px);
+      }
+
+      .thumbnail.selected {
+        background-color: #d0dce8;
+      }
+
+      .thumbnail img {
+        max-width: 70%;
+        max-height: 70%;
+        object-fit: contain;
+        margin-bottom: 8px;
+      }
+
+      .thumbnail p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #041244;
+        text-align: center;
+        text-transform: capitalize;
+      }
+
+      .thumbnail.range-thumbnail {
+        background: transparent;
+        color: white;
+      }
+
+      .range-thumbnail p {
+        color: #fff;
+      }
+
+      .range-thumbnail img {
+        max-width: 100%;
+      }
+      .thumbnail.loaded {
+        opacity: 1;
+      }
+
+      /* Panel 3: Preview Container */
+      .preview-container {
+        flex: 1;
+        background-color: #f5f7fa;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .preview-top {
+        text-align: center;
+        padding: 10px;
+        font-size: 0.9rem;
+        color: #041244;
+      }
+      .preview-body {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      #previewCanvas {
+        max-width: 50%;
+        max-height: 80%;
+      }
+      .vertical-icon-bar {
+        position: absolute;
+        background-color: #ffffff;
+        border-radius: 8px;
+        border: 1px solid #efefef;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding: 20px;
+      }
+      .vertical-icon-bar button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0px;
+      }
+
+      .vertical-icon-bar label {
+        font-size: 0.65rem;
+        color: #041244;
+        text-align: center;
+      }
+
+      .icon-spacer {
+        height: 20px;
+      }
+
+      .preview-bottom {
+        text-align: center;
+        padding: 10px;
+        font-size: 0.75rem;
+        color: #041244;
+      }
+
+      /* -------------------------------------------------
+         Visualiser Mode (Unchanged)
+      ------------------------------------------------- */
+      #visualiserMode {
+        display: none;
+        height: 100vh;
+        overflow: hidden;
+      }
+      #visualiserMode .visualiser-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 30px;
+        background: #f5f7fa;
+      }
+      #visualiserMode #visualiserContent {
+        height: calc(100vh - 50px);
+        position: relative;
+      }
+      #visualiserMode #bgCanvas {
+        position: absolute;
+        background-color: #ffffff;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+      }
+      #visualiserMode #doorOverlayCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        touch-action: none;
+      }
+
+      /* -------------------------------------------------
+         Media Queries
+      ------------------------------------------------- */
+      @media (max-width: 768px) {
+        .door-designer-container {
+          flex-direction: column;
+        }
+        .menu-container,
+        .thumbnail-container {
+          width: 100%;
+          border-right: none;
+        }
+        .thumbnail-container {
+          border-top: 1px solid #ccc;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- START SCREEN -->
+    <div class="start-screen" id="startScreen">
+      <div class="start-content">
+        <!-- Logo (optional) -->
+        <img
+          src="https://crs-kd.github.io/door-designer/logo-white.png"
+          alt="Logo"
+          class="start-logo"
+        />
+        <!-- Tagline or heading -->
+        <h2>Your dream door is only a few steps away</h2>
+        <!-- Instructional text -->
+        <p>Please select a range to begin</p>
+        <!-- Range selection thumbnails will be populated by JS -->
+        <div class="start-range-container"></div>
+      </div>
+    </div>
+
+    <!-- Main Designer Container -->
+    <div class="door-designer-container">
+      <!-- Panel 1: Menu Container -->
+      <div class="menu-container">
+        <div class="logo">
+          <img
+            src="https://crs-kd.github.io/door-designer/logo-blue.png"
+            alt="Logo"
+          />
+        </div>
+        <div class="step-menu">
+          <!-- Removed the Range option; steps now start with Configuration -->
+          <span data-index="0" class="step-menu-item active"
+            >Configuration</span
+          >
+          <span data-index="1" class="step-menu-item">Style</span>
+          <span data-index="2" class="step-menu-item">Sidescreen</span>
+          <span data-index="3" class="step-menu-item">Finish</span>
+          <span data-index="4" class="step-menu-item">Glazing</span>
+          <span data-index="5" class="step-menu-item">Hardware</span>
+        </div>
+
+        <!-- Size Inputs -->
+        <div class="panel-size-inputs">
+          <div class="size-input">
+            <label for="doorWidthInput">Width</label>
+            <input
+              type="number"
+              id="doorWidthInput"
+              step="1"
+              value="875"
+              max="1000"
+              min="700"
+            />
+          </div>
+          <div class="size-input">
+            <label for="doorheightInput">Height</label>
+            <input
+              type="number"
+              id="doorHeightInput"
+              step="1"
+              value="1800"
+              max="2100"
+              min="1750"
+            />
+          </div>
+        </div>
+        <div class="panel-size-inputs">
+          <div class="size-input">
+            <label for="leftSidescreenWidthInput">Left</label>
+            <input
+              type="number"
+              id="leftSidescreenWidthInput"
+              step="1"
+              value="350"
+              min="350"
+              max="600"
+            />
+          </div>
+          <div class="size-input">
+            <label for="rightSidescreenWidthInput">Right</label>
+            <input
+              type="number"
+              id="rightSidescreenWidthInput"
+              step="1"
+              value="350"
+              min="350"
+              max="600"
+            />
+          </div>
+        </div>
+        <!-- Navigation Buttons at the Bottom -->
+        <div class="nav-buttons">
+          <button id="backBtn">Back</button>
+          <button id="nextBtn">Next</button>
+        </div>
+      </div>
+
+      <!-- Panel 2: Thumbnail Container -->
+      <div class="thumbnail-container">
+        <!-- Only include the door designer steps (range is now on the start screen) -->
+        <!-- Step 0: Configuration -->
+        <div id="configuration-step" class="step step-active">
+          
+          <div class="grid-container" id="configuration-list"></div>
+        </div>
+        <!-- Step 1: Style -->
+        <div id="style-step" class="step">
+          
+          <div id="style-list"></div>
+        </div>
+        <!-- Step 2: Sidescreen Style -->
+        <div id="sidescreen-style-step" class="step">
+          
+          <div class="grid-container" id="sidescreen-style-list"></div>
+        </div>
+        <!-- Step 3: Finish -->
+        <div id="finish-step" class="step">
+          <div class="finish-group">
+            
+            <div class="grid-container" id="external-finish-list"></div>
+          </div>
+          <div class="finish-group">
+            
+            <div class="grid-container" id="internal-finish-list"></div>
+          </div>
+        </div>
+        <!-- Step 4: Glazing -->
+        <div id="glazing-step" class="step">
+          <h3 class="collection-title">Glazing Options</h3>
+          <div class="grid-container" id="glazing-list"></div>
+        </div>
+        <!-- Step 5: Hardware -->
+        <div id="hardware-step" class="step">
+          <h3 class="collection-title">Hardware Colour</h3>
+          <div class="grid-container" id="hardware-colour-list"></div>
+          <h3 class="collection-title">Handle</h3>
+          <div class="grid-container" id="handle-list"></div>
+          <h3 class="collection-title">Letterplate Position</h3>
+          <div class="grid-container" id="letterplate-list"></div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Preview Container -->
+      <div class="preview-container">
+        <div class="preview-top">
+          <span class="currentViewText" id="currentViewText"
+            >Current View: External</span
+          >
+        </div>
+        <div class="preview-body">
+          <canvas id="previewCanvas"></canvas>
+          
+          <div class="vertical-icon-bar">
+           
+
+            <button id="viewToggleBtn">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i>
+            </button>
+            <label for="viewToggleBtn">Swap View</label>
+            <span class="icon-spacer"> </span>
+            <button id="opacityToggleBtn">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <label for="opacityToggleBtn">Opacity</label>
+            <span class="icon-spacer"> </span>
+            <button id="visualiserToggleBtn">
+              <i class="fa-solid fa-image"></i>
+            </button>
+            <label for="visualiserToggleBtn">Visualiser</label>
+            <span class="icon-spacer"> </span>
+            <button id="saveDesignBtn">
+              <i class="fa-solid fa-floppy-disk"></i>
+            </button>
+            <label for="saveDesignBtn">Save Design</label>
+
+
+          </div>
+        </div>
+
+        <div class="preview-bottom">
+          <div id="summary"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visualiser Mode Container (Unchanged) -->
+    <div id="visualiserMode">
+      <div class="visualiser-toolbar">
+        <button
+          id="uploadImageBtn"
+          style="
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+          "
+        >
+        <i class="fa-solid fa-file-arrow-up"></i>
+        </button>
+        <button
+          id="saveMockupBtn"
+          style="
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+          "
+        >
+          <i class="fa-solid fa-floppy-disk"></i>
+        </button>
+        <button
+          id="toggleBackBtn"
+          style="
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+          "
+        >
+        <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="visualiserContent">
+        <canvas id="bgCanvas"></canvas>
+        <canvas id="doorOverlayCanvas"></canvas>
+      </div>
+      <input
+        type="file"
+        id="bgFileInput"
+        accept="image/*"
+        style="display: none"
+      />
+    </div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

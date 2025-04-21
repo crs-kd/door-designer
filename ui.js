@@ -50,6 +50,7 @@ function updateViewIndicator() {
 }
 
 
+
 /*
    ---------------------------------------------
    Populate Thumbnails
@@ -97,13 +98,11 @@ function populateConfigurationOptions() {
 function populateSidescreenStyleThumbnails() {
   const container = document.getElementById("sidescreen-style-list");
   const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
-
-  // Use style-defined sidescreenOptions or fallback to just 'solid'
   const sidescreenStyles = styleObj?.sidescreenOptions || ["solid"];
 
   const html = sidescreenStyles.map(val => `
     <div class="thumbnail" data-type="sidescreenStyle" data-value="${val}">
-      <img src="${getImageURL(val + "-thumb")}" alt="${val}">
+      <img src="${getImageURL(val + "-sidescreen-thumb")}" alt="${val}">
       <p>${val}</p>
     </div>
   `).join("");

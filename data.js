@@ -27,13 +27,76 @@ const doorStyles = [
     maxHeight: 2000,
     styleAssets: {
       texture: "horizontal",
-      molding: "berlin"
+      molding: "short-centre",
     },
-    sidescreenOptions: ["solid", "clear", "berlin", "midrail", "half-clear-top","half-clear-bottom"],
-    glazingOptions: ["clear","adina"],
+    sidescreenOptions:  ["solid", "clear", "match-door-style", "midrail", "half-clear-top","half-clear-bottom"],
+    glazingOptions: ["clear","adina", "eden", "graphite", "harmony", "iris", "joy", "murano", "satin", "virtue"],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-mid": "letterplate-mid-A",
+      "letterplate-low": "letterplate-low-A",
+      "letterplate-ground": "letterplate-ground-A"
+    },
+    handleOptions: ["lever"]
+  },
+  {
+    range: "Lorimer",
+    collection: "Allure",
+    name: "lisbon",
+    minWidth: 870,
+    maxWidth: 980,
+    minHeight: 1800,
+    maxHeight: 2000,
+    styleAssets: {
+      texture: "vertical",
+      molding: "full-centre",
+    },
+    sidescreenOptions: ["solid", "clear", "match-door-style", "midrail", "half-clear-top","half-clear-bottom"],
+    glazingOptions: ["clear", "eden", "graphite", "harmony", "joy", "murano", "satin", "virtue"],
+    letterplateOptions: {
+      "letterplate-none": "letterplate-none",
+      "letterplate-low": "letterplate-low-A",
+      "letterplate-ground": "letterplate-ground-A"
+    },
+    handleOptions: ["lever"]
+  },
+  {
+    range: "Lorimer",
+    collection: "Allure",
+    name: "madrid",
+    minWidth: 870,
+    maxWidth: 980,
+    minHeight: 1800,
+    maxHeight: 2000,
+    styleAssets: {
+      texture: null,
+      molding: "squares-centre",
+    },
+    sidescreenOptions: ["solid", "clear", "match-door-style", "midrail", "half-clear-top","half-clear-bottom"],
+    glazingOptions: ["clear", "eden", "graphite", "harmony", "joy", "murano", "satin", "virtue"],
+    letterplateOptions: {
+      "letterplate-none": "letterplate-none",
+      "letterplate-low": "letterplate-low-A",
+      "letterplate-ground": "letterplate-ground-A"
+    },
+    handleOptions: ["lever"]
+  },
+  {
+    range: "Lorimer",
+    collection: "Allure",
+    name: "miami",
+    minWidth: 870,
+    maxWidth: 980,
+    minHeight: 1800,
+    maxHeight: 2000,
+    styleAssets: {
+      texture: "vertical",
+      molding: "full-left",
+    },
+    sidescreenOptions: ["solid", "clear", "match-door-style", "midrail", "half-clear-top","half-clear-bottom"],
+    glazingOptions: ["clear", "eden", "graphite", "harmony", "joy", "murano", "satin", "virtue"],
+    letterplateOptions: {
+      "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
       "letterplate-ground": "letterplate-ground-A"
     },
@@ -89,55 +152,790 @@ const textureDefs = [
   { id: "none", image: null },
   {
     id: "horizontal",
-    image: "horizontal",
+    image: "allure-horizontal",
     marginX: 35,
-    marginY: 20
-  }
+    marginY: 10,
+    offsetX: 0,
+    offsetY: -3
+
+  },
+  {
+    id: "vertical",
+    image: "allure-vertical",
+    marginX: 35,
+    marginY: 28,
+    offsetX: 0,
+    offsetY: 5
+  },
 ];
 
 // 2) Moldings
 // The xFactor, yFactor, widthFactor, heightFactor specify how it’s placed on the main door panel.
 const moldingDefs = [
   {
-    id: "berlin",
-    image: "berlin",
-    width: 75,
+    id: "short-centre",
+    width: 70,
     height: 260,
+    align: "center", // "left" | "right" | "center"
+    offsetY: 250,
+    elements: [
+      {
+        id: "molding-top",
+        rect: { x: 0, y: 0, width: 70, height: 15 },
+        options: { imageURL: getImageURL("allure-x"), flipHorizontal: false, flipVertical: false, rotation: 0}
+      },
+      {
+        id: "molding-bottom",
+        rect: { x: 0, y: "bottom", width: 70, height: 15 },
+        options: {imageURL: getImageURL("allure-x"), flipHorizontal: false, flipVertical: true, rotation: 0}
+      },
+      {
+        id: "molding-left",
+        mixedRect: { x: 0, width: 15, yFactor: 0, heightFactor: 1 },
+        options: {imageURL: getImageURL("allure-y"), flipHorizontal: false, flipVertical: false, rotation: 0}
+      },
+      {
+        id: "molding-right", mixedRect: { x: "right", width: 15, yFactor: 0, heightFactor: 1 },
+        options: {imageURL: getImageURL("allure-y"),flipHorizontal: true,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-top-left", mixedRect: { x:0, y:0, width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: false,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-top-right", mixedRect: { x:"right", y:0, width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: true,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-bottom-left", mixedRect: { x:0, y:"bottom", width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: false,flipVertical: true,rotation: 0}
+      },
+      {
+        id: "molding-corner-bottom-right", mixedRect: { x:"right", y:"bottom", width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: true,flipVertical: true,rotation: 0}
+      },
+    ]
+  },
+
+  {
+    id: "full-centre",
+    width: 70,
+    height: 360,
+    align: "center", // "left" | "right" | "center"
+    offsetY: 150,
+    elements: [
+      {
+        id: "molding-top",
+        rect: { x: 0, y: 0, width: 75, height: 15 },
+        options: { imageURL: getImageURL("allure-x"), flipHorizontal: false, flipVertical: false, rotation: 0}
+      },
+      {
+        id: "molding-bottom",
+        rect: { x: 0, y: "bottom", width: 75, height: 15 },
+        options: {imageURL: getImageURL("allure-x"), flipHorizontal: false, flipVertical: true, rotation: 0}
+      },
+      {
+        id: "molding-left",
+        mixedRect: { x: 0, width: 15, yFactor: 0, heightFactor: 1 },
+        options: {imageURL: getImageURL("allure-y"), flipHorizontal: false, flipVertical: false, rotation: 0}
+      },
+      {
+        id: "molding-right", mixedRect: { x: "right", width: 15, yFactor: 0, heightFactor: 1 },
+        options: {imageURL: getImageURL("allure-y"),flipHorizontal: true,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-top-left", mixedRect: { x:0, y:0, width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: false,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-top-right", mixedRect: { x:"right", y:0, width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: true,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-bottom-left", mixedRect: { x:0, y:"bottom", width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: false,flipVertical: true,rotation: 0}
+      },
+      {
+        id: "molding-corner-bottom-right", mixedRect: { x:"right", y:"bottom", width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: true,flipVertical: true,rotation: 0}
+      },
+    ]
+  },
+
+  {
+    id: "full-left",
+    width: 70,
+    height: 360,
+    align: "left", // "left" | "right" | "center"
+    offsetY: 150,
+    offsetX: 20,
+    elements: [
+      {
+        id: "molding-top",
+        rect: { x: 0, y: 0, width: 70, height: 15 },
+        options: { imageURL: getImageURL("allure-x"), flipHorizontal: false, flipVertical: false, rotation: 0}
+      },
+      {
+        id: "molding-bottom",
+        rect: { x: 0, y: "bottom", width: 70, height: 15 },
+        options: {imageURL: getImageURL("allure-x"), flipHorizontal: false, flipVertical: true, rotation: 0}
+      },
+      {
+        id: "molding-left",
+        mixedRect: { x: 0, width: 15, yFactor: 0, heightFactor: 1 },
+        options: {imageURL: getImageURL("allure-y"), flipHorizontal: false, flipVertical: false, rotation: 0}
+      },
+      {
+        id: "molding-right", mixedRect: { x: "right", width: 15, yFactor: 0, heightFactor: 1 },
+        options: {imageURL: getImageURL("allure-y"),flipHorizontal: true,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-top-left", mixedRect: { x:0, y:0, width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: false,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-top-right", mixedRect: { x:"right", y:0, width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: true,flipVertical: false,rotation: 0}
+      },
+      {
+        id: "molding-corner-bottom-left", mixedRect: { x:0, y:"bottom", width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: false,flipVertical: true,rotation: 0}
+      },
+      {
+        id: "molding-corner-bottom-right", mixedRect: { x:"right", y:"bottom", width: 15, height: 15 },
+        options: {imageURL: getImageURL("allure-corner"),flipHorizontal: true,flipVertical: true,rotation: 0}
+      },
+    ]
+  },
+
+
+  {
+    id: "squares-centre",
+    width: 70,
+    height: 360,
     align: "center",
-    offsetY: 250
+    offsetX: 0,
+    offsetY: 150,
+    repeat: {
+      rows: 4,
+      cols: 1,
+      gapX: 0,
+      gapY: 40
+    },
+    cell: {
+      width: 70,
+      height: 60,
+      elements: [
+        {
+          id: "molding-top",
+          rect: { x: 0, y: 0, width: 70, height: 15 },
+          options: { imageURL: getImageURL("allure-x"), flipHorizontal: false, flipVertical: false, rotation: 0}
+        },
+        {
+          id: "molding-bottom",
+          rect: { x: 0, y: "bottom", width: 70, height: 15 },
+          options: {imageURL: getImageURL("allure-x"), flipHorizontal: false, flipVertical: true, rotation: 0}
+        },
+        {
+          id: "molding-left",
+          mixedRect: { x: 0, width: 15, yFactor: 0, heightFactor: 1 },
+          options: {imageURL: getImageURL("allure-y"), flipHorizontal: false, flipVertical: false, rotation: 0}
+        },
+        {
+          id: "molding-right", mixedRect: { x: "right", width: 15, yFactor: 0, heightFactor: 1 },
+          options: {imageURL: getImageURL("allure-y"),flipHorizontal: true,flipVertical: false,rotation: 0}
+        },
+        {
+          id: "molding-corner-top-left", mixedRect: { x:0, y:0, width: 15, height: 15 },
+          options: {imageURL: getImageURL("allure-corner"),flipHorizontal: false,flipVertical: false,rotation: 0}
+        },
+        {
+          id: "molding-corner-top-right", mixedRect: { x:"right", y:0, width: 15, height: 15 },
+          options: {imageURL: getImageURL("allure-corner"),flipHorizontal: true,flipVertical: false,rotation: 0}
+        },
+        {
+          id: "molding-corner-bottom-left", mixedRect: { x:0, y:"bottom", width: 15, height: 15 },
+          options: {imageURL: getImageURL("allure-corner"),flipHorizontal: false,flipVertical: true,rotation: 0}
+        },
+        {
+          id: "molding-corner-bottom-right", mixedRect: { x:"right", y:"bottom", width: 15, height: 15 },
+          options: {imageURL: getImageURL("allure-corner"),flipHorizontal: true,flipVertical: true,rotation: 0}
+        },
+      ]
+    }
   }
-  // Additional moldings ...
+
 ];
-
-
+  
 // 3) Glazing definitions
 const glazingDefs = [
   {
     id: "adina",
-    image: "adina",
-    width: 48,
-    height: 232,
-    align: "center",   
-    offsetY: 266      
-},
-{
-  id: "clear",
-  image: "clear",
-  width: 48,
-  height: 230,
-  align: "center",   
-  offsetY: 266        
-}
+    image: "adina", // fallback
+    obscureExternal: "Adina-external",
+    obscureInternal: "Adina-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+  },
+
+  // Clear Glass 
+  {
+    id: "clear",
+    image: "clear", // fallback
+    obscureExternal: "clear",
+    obscureInternal: "clear",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "clear",
+        obscureExternal: "clear",
+        obscureInternal: "clear",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("clear"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+
+      miami: {
+        image: "clear",
+        obscureExternal: "clear",
+        obscureInternal: "clear",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+  // Eden Glass 
+  {
+    id: "eden",
+    image: "eden", // fallback
+    obscureExternal: "eden-external",
+    obscureInternal: "eden-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "eden-long",
+        obscureExternal: "eden-long-external",
+        obscureInternal: "eden-long-internal",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("eden-square"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+      miami: {
+        image: "eden",
+        obscureExternal: "eden-external",
+        obscureInternal: "eden-internal",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+
+  // Graphite Glass
+  
+  {
+    id: "graphite",
+    image: "graphite", // fallback
+    obscureExternal: "graphite-external",
+    obscureInternal: "graphite-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "graphite-long",
+        obscureExternal: "graphite-long-external",
+        obscureInternal: "graphite-long-internal",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("graphite-square"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+      miami: {
+        image: "graphite-long",
+        obscureExternal: "graphite-long-internal",
+        obscureInternal: "graphite-long-external",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+
+   // Harmony Glass
+  
+   {
+    id: "harmony",
+    image: "harmony", // fallback
+    obscureExternal: "harmony-external",
+    obscureInternal: "harmony-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "harmony-long",
+        obscureExternal: "harmony-long-external",
+        obscureInternal: "harmony-long-internal",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("harmony-square"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+      miami: {
+        image: "harmony-long",
+        obscureExternal: "harmony-long-internal",
+        obscureInternal: "harmony-long-external",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+  
+   // Joy Glass
+  
+   {
+    id: "joy",
+    image: "joy", // fallback
+    obscureExternal: "joy-external",
+    obscureInternal: "joy-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "joy-long",
+        obscureExternal: "joy-long-external",
+        obscureInternal: "joy-long-internal",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("joy-square"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+      miami: {
+        image: "joy-long",
+        obscureExternal: "joy-long-internal",
+        obscureInternal: "joy-long-external",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+
+  // Murano Glass
+  
+  {
+    id: "murano",
+    image: "murano", // fallback
+    obscureExternal: "murano-external",
+    obscureInternal: "murano-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "murano-long",
+        obscureExternal: "murano-long-external",
+        obscureInternal: "murano-long-internal",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("murano-square"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+      miami: {
+        image: "murano-long",
+        obscureExternal: "murano-long-internal",
+        obscureInternal: "murano-long-external",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+
+  // Murano Glass
+  
+  {
+    id: "murano",
+    image: "murano", // fallback
+    obscureExternal: "murano-external",
+    obscureInternal: "murano-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "murano-long",
+        obscureExternal: "murano-long-external",
+        obscureInternal: "murano-long-internal",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("murano-square"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+      miami: {
+        image: "murano-long",
+        obscureExternal: "murano-long-internal",
+        obscureInternal: "murano-long-external",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+// Satin Glass
+  
+  {
+    id: "satin",
+    image: "satin", // fallback
+    obscureExternal: "satin-external",
+    obscureInternal: "satin-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "satin-long",
+        obscureExternal: "satin-long-external",
+        obscureInternal: "satin-long-internal",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("satin-square"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+      miami: {
+        image: "satin-long",
+        obscureExternal: "satin-long-internal",
+        obscureInternal: "satin-long-external",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+
+  // Virtue Glass
+  
+  {
+    id: "virtue",
+    image: "virtue", // fallback
+    obscureExternal: "virtue-external",
+    obscureInternal: "virtue-internal",
+    width: 38,
+    height: 230,
+    offsetY: 266,
+    align: "center",
+    styleOverrides: {
+      lisbon: {
+        image: "virtue-long",
+        obscureExternal: "virtue-long-external",
+        obscureInternal: "virtue-long-internal",
+        width: 38,
+        height: 330,
+        offsetY: 166,
+      },
+      
+      madrid: {
+        width: 38,
+        height: 360,
+        offsetY: 134,
+        align: "center",
+        repeat: {
+          rows: 4,
+          cols: 1,
+          gapY: 72,
+          gapX: 0
+        },
+        cell: {
+          width: 38,
+          height: 28,
+          elements: [
+            {
+              rect: { x: 0, y: 0, width: 38, height: 28 },
+              options: {
+                imageURL: getImageURL("virtue-square"),
+                flipHorizontal: false,
+                flipVertical: false,
+                rotation: 0
+              }
+            }
+          ]
+        }
+      },
+      miami: {
+        image: "virtue-long",
+        obscureExternal: "virtue-long-internal",
+        obscureInternal: "virtue-long-external",
+        width: 38,
+        height: 330,
+        align: "left",
+        offsetY: 166,
+        offsetX: 36,
+      },
+    }
+  },
+
 ];
 
 
 const sidescreenStyleDefs = [
   {
-    id: "berlin",
-    name: "Berlin",
-    molding: "berlin",
-    glazing: "match",
-    texture: "match"
+    id: "match-door-style",
+    name: "Match Door Style",
+    texture: "match",
+    molding: "match",
+    glazing: "match"
   },
   {
     id: "clear",
@@ -158,7 +956,7 @@ const sidescreenStyleDefs = [
     name: "Midrail",
     glazing: null,
     molding: null,
-    texture: "horizontal",
+    texture: "match",
     panelElements: [
     {
       id: "half-divider",
@@ -181,7 +979,7 @@ const sidescreenStyleDefs = [
   name: "Half Clear Top",
   glazing: "half-clear-top",
   molding: null,
-  texture: "horizontal",
+  texture: "match",
   panelElements: [
   {
     id: "half-divider",
@@ -204,7 +1002,7 @@ const sidescreenStyleDefs = [
   name: "Half Clear Bottom",
   glazing: "half-clear-bottom",
   molding: null,
-  texture: "horizontal",
+  texture: "match",
   panelElements: [
     {
       id: "half-divider",
@@ -224,16 +1022,6 @@ const sidescreenStyleDefs = [
 }
 ];
 
-const sidescreenMoldingDefs = [
-  {
-    id: "berlin",
-    image: "berlin",
-    width: 75,
-    height: 260,
-    align: "center",
-    offsetY: 250
-  }
-];
 
 
 
@@ -258,7 +1046,7 @@ const sidescreenGlazingDefs = [
   {
     id: "clear",
     image: "clear",
-    width: 48,
+    width: 38,
     height: 232,
     align: "center",   
     offsetY: 266
@@ -266,7 +1054,7 @@ const sidescreenGlazingDefs = [
   {
     id: "adina",
     image: "adina",
-    width: 48,
+    width: 38,
     height: 232,
     align: "center",   
     offsetY: 266
@@ -299,21 +1087,21 @@ const letterplateDefs = [
     width: 100,
     height: 25,
     align: "center",          // can be "left", "right", or "center"
-    offsetY: 200              // from bottom
+    offsetY: 210              // from bottom
   },
   {
     id: "letterplate-low-A",
-    width: 150,
-    height: 35,
+    width: 100,
+    height: 25,
     align: "center",
-    offsetY: 300
+    offsetY: 85
   },
   {
     id: "letterplate-ground-A",
-    width: 150,
-    height: 35,
+    width: 100,
+    height: 25,
     align: "center",
-    offsetY: 200
+    offsetY: 50
   }
 ];
 
@@ -338,7 +1126,15 @@ const hardwareColorMap = {
 
 const glazingDisplayNames = {
   clear: "Clear",
-  adina: "Adina"
+  adina: "Adina",
+  eden: "Eden",
+  graphite: "Graphite",
+  harmony: "Harmony",
+  iris: "Iris",
+  joy: "Joy",
+  murano: "Murano Black",
+  satin: "Satin",
+  virtue: "Virtue",
 };
 
 
@@ -358,9 +1154,9 @@ export const state = {
   currentStep: 1,
   stepsCompleted: Array(6).fill(true),
   selectedRange: doorRanges[0],
-  selectedStyle: "berlin",
-  selectedConfiguration: "single-left",
-  selectedGlazing: "clear",
+  selectedStyle: "blank",
+  selectedConfiguration: "single",
+  selectedGlazing: null,
   selectedLetterplate: null,
   selectedHardwareColor: "gold",
   selectedHandle: "lever",
@@ -368,9 +1164,10 @@ export const state = {
   selectedInternalFinish: finishes[0],
   selectedLeftPanel: null,
   selectedRightPanel: null,
-  selectedSideScreenStyle: "berlin",
+  selectedSideScreenStyle: "solid",
   backgroundImg: null,
   currentView: "external",
+  glazingObscureEnabled: false
 
 };
 
@@ -398,7 +1195,6 @@ export {
     stepIDs,
     finishes,
     handleOptions,
-    sidescreenMoldingDefs,
     sidescreenGlazingDefs,
     sidescreenStyleDefs,
     

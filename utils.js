@@ -127,6 +127,59 @@ function getSidescreenDimensionsFromInput() {
   };
 }
 
+/**
+ * Builds a mask canvas that matches the molding shape,
+ * so you can use it to cut out areas (e.g., from groove textures).
+ *
+ * @param {Object} moldDef - The molding definition (must include `elements`)
+ * @param {number} width - The panel width (door or sidescreen)
+ * @param {number} height - The panel height
+ * @returns {HTMLCanvasElement} A canvas where the molding area is filled in white
+ */
+function buildMoldingMask(moldDef, width, height) {
+  const maskCanvas = document.createElement("canvas");
+  maskCanvas.width = width;
+  maskCanvas.height = height;
+  const ctx = maskCanvas.getContext("2d");
+
+  if (!moldDef?.elements || !Array.isArray(moldDef.elements)) return maskCanvas;
+
+  ctx.fillStyle = "white";
+
+  for (const el of moldDef.elements) {
+    let rect;
+    if (el.rect) {
+      const r = el.rect;
+      const w = r.width === "full" ? width : r.width;
+      const x = r.x === "right" ? width - w : r.x ?? 0;
+      const y = r.align === "centerY"
+        ? (height - r.height) / 2
+        : r.y === "bottom"
+        ? height - r.height
+        : r.y ?? 0;
+      rect = { x, y, width: w, height: r.height };
+    } else if (el.mixedRect) {
+      const m = el.mixedRect;
+      rect = {
+        x: m.x !== undefined
+          ? (m.x === "right" ? width - m.width : m.x)
+          : (m.xFactor ?? 0) * width,
+        y: m.y !== undefined
+          ? (m.y === "bottom" ? height - m.height : m.y)
+          : (m.yFactor ?? 0) * height,
+        width: m.width ?? (m.widthFactor * width),
+        height: m.height ?? (m.heightFactor * height)
+      };
+    } else {
+      continue;
+    }
+
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+  }
+
+  return maskCanvas;
+}
+
 export {
   getImageURL,
   loadImage,
@@ -136,4 +189,5 @@ export {
   goToPreviousStep,
   getDoorPanelDimensionsFromInput,
   getSidescreenDimensionsFromInput,
+  buildMoldingMask
 };
