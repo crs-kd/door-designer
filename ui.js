@@ -103,7 +103,7 @@ function populateSidescreenStyleThumbnails() {
   const html = sidescreenStyles.map(val => `
     <div class="thumbnail" data-type="sidescreenStyle" data-value="${val}">
       <img src="${getImageURL(val + "-sidescreen-thumb")}" alt="${val}">
-      <p>${val}</p>
+      <p>${val === "match-door-style" ? (styleDisplayNames[state.selectedStyle] || state.selectedStyle) : val}</p>
     </div>
   `).join("");
 
@@ -154,18 +154,21 @@ function populateLetterplateThumbnails() {
     container.innerHTML = "";
     return;
   }
-  const keys = Object.keys(styleObj.letterplateOptions);
+
+  const entries = Object.entries(styleObj.letterplateOptions);
   let html = "";
-  keys.forEach(k => {
+  entries.forEach(([key, actualId]) => {
     html += `
-      <div class="thumbnail" data-type="letterplate" data-value="${k}">
-        <img src="${getImageURL(k + "-thumb")}" alt="${k}">
-        <p>${letterplateDisplayNames[k] || k}</p>
+      <div class="thumbnail" data-type="letterplate" data-value="${actualId}">
+        <img src="${getImageURL(key + "-thumb")}" alt="${key}">
+        <p>${letterplateDisplayNames[key] || key}</p>
       </div>
     `;
   });
+
   container.innerHTML = html;
   addThumbnailClick("letterplate");
+
 }
 
 function populateHardwareColorThumbnails() {

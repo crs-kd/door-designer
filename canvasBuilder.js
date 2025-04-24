@@ -1,6 +1,8 @@
 
 import { getImageURL, loadImage, tintImage, mirrorCanvas, goToNextStep, goToPreviousStep, getDoorPanelDimensionsFromInput, getSidescreenDimensionsFromInput} from "./utils.js";
-
+import { createBasePanel } from "./panelBaseBuilder.js";
+import { composeElementGroup } from "./elementGroupBuilder.js";
+import { buildMoldingMask } from "./utils.js";
 
 import { populateSidescreenStyleThumbnails } from "./ui.js";
 import { populateConfigurationOptions } from "./ui.js";
@@ -98,204 +100,419 @@ function getElementPosition(id, panelWidth, panelHeight, width, height) {
    Build the Door Panel
    ---------------------------------------------
 */
-async function buildPanelComposite(panelWidth, panelHeight, finish, ) {
-  // For finish, we have a { color, texture, textureBlend }, from finishColorMap
-  let baseColor = finish.color || "#ccc";
-  let textureURL = finish.texture || null;
 
+async function buildPanelComposite(panelWidth, panelHeight, finish) {
   const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
 
+  // Groove texture def
+  const grooveTextureDef = styleObj?.styleAssets?.texture
+    ? textureDefs.find(t => t.id === styleObj.styleAssets.texture)
+    : null;
 
+  // Step 1: Create base panel
+  const finalCanvas = await createBasePanel({
+    width: panelWidth,
+    height: panelHeight,
+    baseColor: finish.color || "#ccc",
+    woodTextureURL: finish.texture || null,
+    grooveTextureDef,
+  });
+  const finalCtx = finalCanvas.getContext("2d");
 
-  // Step 1: draw the door panel "frame" elements onto an offscreen
-  const elementsCanvas = document.createElement("canvas");
-  elementsCanvas.width = panelWidth;
-  elementsCanvas.height = panelHeight;
-  const elementsCtx = elementsCanvas.getContext("2d");
-
-  // The same original frame segments
-  const doorPanelElements = [
+  // Step 2: Frame
+  const frameElements = JSON.parse(JSON.stringify([
     {
       id: "top-frame",
       mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
-      options: { imageURL: getImageURL("frame-top"), flipHorizontal: false, flipVertical: false, rotation: 0 }
+      options: { imageURL: getImageURL("frame-top") },
     },
     {
       id: "left-vertical-frame",
       mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL("frame"), flipHorizontal: false, flipVertical: false, rotation: 0 }
+      options: { imageURL: getImageURL("frame") },
     },
     {
       id: "right-vertical-frame",
       mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL("frame"), flipHorizontal: true, flipVertical: false, rotation: 0 }
+      options: { imageURL: getImageURL("frame"), flipHorizontal: true },
     },
     {
       id: "top-left-corner",
       rect: { x: 0, y: 0, width: 35, height: 35 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: false, flipVertical: false, rotation: 0 }
+      options: { imageURL: getImageURL("corner") },
     },
     {
       id: "top-right-corner",
       rect: { x: "right", y: 0, width: 35, height: 35 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: true, flipVertical: false, rotation: 0 }
+      options: { imageURL: getImageURL("corner"), flipHorizontal: true },
+    },
+  ]));
+
+  const frameMask = buildMoldingMask({ elements: frameElements }, panelWidth, panelHeight);
+  const frameCanvas = await composeElementGroup({
+    width: panelWidth,
+    height: panelHeight,
+    baseColor: finish.color, // Future: replace with configurable frame color
+    textureURL: finish.texture,
+    elements: frameElements,
+    mask: frameMask,
+  });
+  finalCtx.drawImage(frameCanvas, 0, 0);
+  finalCtx.globalCompositeOperation = "source-over";
+
+  // Step 3: Molding
+const moldingDef = styleObj?.styleAssets?.molding
+? moldingDefs.find(m => m.id === styleObj.styleAssets.molding)
+: null;
+
+let moldingElements = [];
+
+if (moldingDef?.repeat && moldingDef?.cell?.elements) {
+const { rows, cols, gapX = 0, gapY = 0 } = moldingDef.repeat;
+const { width: cellW, height: cellH, elements: cellElements } = moldingDef.cell;
+
+const totalGridWidth = cols * cellW + (cols - 1) * gapX;
+const totalGridHeight = rows * cellH + (rows - 1) * gapY;
+
+const gridOffsetX = (moldingDef.width - totalGridWidth) / 2;
+const gridOffsetY = (moldingDef.height - totalGridHeight) / 2;
+
+for (let row = 0; row < rows; row++) {
+  for (let col = 0; col < cols; col++) {
+    const cellOffsetX = gridOffsetX + col * (cellW + gapX);
+    const cellOffsetY = gridOffsetY + row * (cellH + gapY);
+
+    for (const el of cellElements) {
+      const cloned = JSON.parse(JSON.stringify(el));
+
+      if (cloned.rect) {
+        const r = cloned.rect;
+        const w = r.width === "full" ? cellW : r.width;
+        const x = r.x === "right" ? cellW - w : r.x ?? 0;
+        const y = r.y === "bottom" ? cellH - r.height : r.y ?? 0;
+
+        cloned.rect = {
+          x: cellOffsetX + x,
+          y: cellOffsetY + y,
+          width: w,
+          height: r.height,
+        };
+      } else if (cloned.mixedRect) {
+        const m = cloned.mixedRect;
+        cloned.rect = {
+          x: cellOffsetX + (
+            m.x !== undefined
+              ? (m.x === "right" ? cellW - m.width : m.x)
+              : (m.xFactor ?? 0) * cellW
+          ),
+          y: cellOffsetY + (
+            m.y !== undefined
+              ? (m.y === "bottom" ? cellH - m.height : m.y)
+              : (m.yFactor ?? 0) * cellH
+          ),
+          width: m.width ?? (m.widthFactor * cellW),
+          height: m.height ?? (m.heightFactor * cellH),
+        };
+      }
+
+      moldingElements.push(cloned);
     }
+  }
+}
+} else if (moldingDef?.elements) {
+moldingElements = JSON.parse(JSON.stringify(moldingDef.elements));
+}
 
-  ];
+if (moldingElements.length > 0) {
+const moldW = moldingDef.width;
+const moldH = moldingDef.height;
 
-  // Helper to draw each piece
-  async function drawPanelElement(ctx, rectDef, options, panelWidth, panelHeight) {
-    const img = await loadImage(options.imageURL);
-    if (!img) return;
+const moldingCanvas = await composeElementGroup({
+  width: moldW,
+  height: moldH,
+  baseColor: finish.color, // For visibility during development
+  textureURL: finish.texture,
+  elements: moldingElements,
+  mask: buildMoldingMask({ elements: moldingElements }, moldW, moldH),
+});
+
+// Correct alignment logic
+const moldX =
+  moldingDef.align === "left"
+    ? 0 + (moldingDef.offsetX ?? 0)
+    : moldingDef.align === "right"
+    ? panelWidth - moldW + (moldingDef.offsetX ?? 0)
+    : (panelWidth - moldW) / 2 + (moldingDef.offsetX ?? 0);
+
+const moldY = panelHeight - moldH - (moldingDef.offsetY ?? 0);
+
+finalCtx.drawImage(moldingCanvas, moldX, moldY);
+finalCtx.globalCompositeOperation = "source-over";
+}
+
   
-    const rect = {
-      width: rectDef.width,
-      height: rectDef.height,
-      x: rectDef.x === "right" ? panelWidth - rectDef.width : rectDef.x,
-      y: rectDef.y === "bottom" ? panelHeight - rectDef.height : rectDef.y
+  // Step 4: Glazing
+if (state.selectedGlazing && state.selectedGlazing !== "none") {
+  const glazeDef = glazingDefs.find(g => g.id === state.selectedGlazing);
+  if (glazeDef) {
+    const override = glazeDef.styleOverrides?.[state.selectedStyle] || {};
+    const width = override.width ?? glazeDef.width;
+    const height = override.height ?? glazeDef.height;
+    const offsetY = override.offsetY ?? glazeDef.offsetY ?? 0;
+    const offsetX = override.offsetX ?? glazeDef.offsetX ?? 0;
+    const align = override.align ?? glazeDef.align ?? "center";
+
+    const glazeCanvas = document.createElement("canvas");
+    glazeCanvas.width = width;
+    glazeCanvas.height = height;
+    const glazeCtx = glazeCanvas.getContext("2d");
+
+    const drawElements = async (ctx, elements, w, h, ox = 0, oy = 0) => {
+      for (const el of elements) {
+        let rect;
+        const img = await loadImage(el.options.imageURL);
+        if (!img) continue;
+
+        if (el.rect) {
+          const r = el.rect;
+          const rw = r.width === "full" ? w : r.width;
+          const rx = ox + (r.x === "right" ? w - rw : r.x ?? 0);
+          const ry = oy + (
+            r.align === "centerY"
+              ? (h - r.height) / 2
+              : r.y === "bottom"
+              ? h - r.height
+              : r.y ?? 0
+          );
+          rect = { x: rx, y: ry, width: rw, height: r.height };
+        } else if (el.mixedRect) {
+          const m = el.mixedRect;
+          rect = {
+            x: ox + (m.x !== undefined ? (m.x === "right" ? w - m.width : m.x) : (m.xFactor ?? 0) * w),
+            y: oy + (m.y !== undefined ? (m.y === "bottom" ? h - m.height : m.y) : (m.yFactor ?? 0) * h),
+            width: m.width ?? m.widthFactor * w,
+            height: m.height ?? m.heightFactor * h,
+          };
+        } else continue;
+
+        ctx.save();
+        ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        if (el.options.rotation) ctx.rotate((el.options.rotation * Math.PI) / 180);
+        const scaleX = el.options.flipHorizontal ? -1 : 1;
+        const scaleY = el.options.flipVertical ? -1 : 1;
+        ctx.scale(scaleX, scaleY);
+        ctx.drawImage(img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
+        ctx.restore();
+      }
     };
-  
-    ctx.save();
-    ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
-    if (options.rotation) {
-      ctx.rotate((options.rotation * Math.PI) / 180);
-    }
-    const scaleX = options.flipHorizontal ? -1 : 1;
-    const scaleY = options.flipVertical ? -1 : 1;
-    ctx.scale(scaleX, scaleY);
-    ctx.drawImage(img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
-    ctx.restore();
-  }
 
-  // Draw them
-  for (let elem of doorPanelElements) {
-    let rect;
-  
-    if (elem.rect) {
-      rect = {
-        x: elem.rect.x === "right" ? panelWidth - elem.rect.width : elem.rect.x,
-        y: elem.rect.y === "bottom" ? panelHeight - elem.rect.height : elem.rect.y,
-        width: elem.rect.width,
-        height: elem.rect.height
-      };
-    } else if (elem.mixedRect) {
-      const m = elem.mixedRect;
-      rect = {
-        x: m.x !== undefined
-          ? (m.x === "right" ? panelWidth - m.width : m.x)
-          : (m.xFactor !== undefined ? m.xFactor * panelWidth : 0),
-        y: m.y !== undefined
-          ? (m.y === "bottom" ? panelHeight - m.height : m.y)
-          : (m.yFactor !== undefined ? m.yFactor * panelHeight : 0),
-        width: m.width !== undefined ? m.width : (m.widthFactor * panelWidth),
-        height: m.height !== undefined ? m.height : (m.heightFactor * panelHeight)
-      };
-    } else if (elem.rectFactor) {
-      rect = {
-        x: elem.rectFactor.x * panelWidth,
-        y: elem.rectFactor.y * panelHeight,
-        width: elem.rectFactor.width * panelWidth,
-        height: elem.rectFactor.height * panelHeight
-      };
+    if (override.repeat && override.cell?.elements) {
+      const { rows, cols, gapX = 0, gapY = 0 } = override.repeat;
+      const cellW = override.cell.width;
+      const cellH = override.cell.height;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const ox = col * (cellW + gapX);
+          const oy = row * (cellH + gapY);
+          await drawElements(glazeCtx, override.cell.elements, cellW, cellH, ox, oy);
+        }
+      }
     } else {
-      console.warn("Missing shape data for panel element:", elem);
-      continue;
+      let imgKey = override.image ?? glazeDef.image;
+      if (state.glazingObscureEnabled) {
+        imgKey = state.currentView === "internal"
+          ? override.obscureInternal ?? glazeDef.obscureInternal ?? imgKey
+          : override.obscureExternal ?? glazeDef.obscureExternal ?? imgKey;
+      }
+
+      const img = await loadImage(getImageURL(imgKey));
+      if (img) {
+        glazeCtx.drawImage(img, 0, 0, width, height);
+      }
     }
-  
-    await drawPanelElement(elementsCtx, rect, elem.options);
+
+    const glazeX =
+      align === "left"
+        ? 40 + offsetX
+        : align === "right"
+        ? panelWidth - width - 40 + offsetX
+        : (panelWidth - width) / 2 + offsetX;
+    const glazeY = panelHeight - height - offsetY;
+
+    finalCtx.drawImage(glazeCanvas, glazeX, glazeY);
   }
-  // Step 2: combine with base color & optional texture
-  const finalCanvas = document.createElement("canvas");
-  finalCanvas.width = panelWidth;
-  finalCanvas.height = panelHeight;
-  const finalCtx = finalCanvas.getContext("2d");
+}
 
-  // Fill base color
-  finalCtx.fillStyle = baseColor;
-  finalCtx.fillRect(0, 0, panelWidth, panelHeight);
+// Step 6: Handle
+if (state.selectedHandle && state.selectedHandle !== "none") {
+  const hDef = handleDefs.find(def => def.id === state.selectedHandle);
+  if (hDef) {
+    const handleImg = await loadImage(getImageURL(state.selectedHandle));
+    if (handleImg) {
+      const hW = hDef.width;
+      const hH = hDef.height;
 
-  // If there's a texture, overlay it
-  if (textureURL) {
-    const textureImg = await loadImage(textureURL);
-    if (textureImg) {
-      // Scale texture to fill the door
-      finalCtx.globalCompositeOperation = finish.textureBlend || "source-over";
-      finalCtx.drawImage(textureImg, 0, 0, panelWidth, panelHeight);
-      finalCtx.globalCompositeOperation = "source-over";
-    }
-  }
+      const isLeft = state.handleSide === "left";
+      const hX = isLeft ? hDef.offsetX : panelWidth - hW - hDef.offsetX;
+      const hY = panelHeight - hH - hDef.offsetY;
 
-  if (styleObj && styleObj.styleAssets && styleObj.styleAssets.texture) {
-    const grooveDef = textureDefs.find(t => t.id === styleObj.styleAssets.texture);
-    
-    if (grooveDef && grooveDef.image) {
-      const grooveImg = await loadImage(getImageURL(grooveDef.image));
-      if (grooveImg) {
-        // Margins and Offsets
-        const marginX = grooveDef.marginX ?? grooveDef.margin ?? 0;
-        const marginY = grooveDef.marginY ?? grooveDef.margin ?? 0;
-        const offsetX = grooveDef.offsetX ?? 0;
-        const offsetY = grooveDef.offsetY ?? 0;
-  
-        const grooveW = panelWidth - marginX * 2;
-        const grooveH = panelHeight - marginY * 2;
-  
-        const grooveX = marginX + offsetX;
-        const grooveY = marginY + offsetY;
-  
-        finalCtx.globalCompositeOperation = "multiply"; // or "overlay"
-        finalCtx.drawImage(grooveImg, grooveX, grooveY, grooveW, grooveH);
+      // 1. Tint and optionally flip
+      const tintedHandle = tintImage(handleImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
+
+      finalCtx.save();
+      if (isLeft) {
+        finalCtx.translate(hX + hW / 2, hY + hH / 2);
+        finalCtx.scale(-1, 1); // Mirror horizontally
+        finalCtx.drawImage(tintedHandle, -hW / 2, -hH / 2, hW, hH);
+      } else {
+        finalCtx.drawImage(tintedHandle, hX, hY, hW, hH);
+      }
+      finalCtx.restore();
+
+      // 2. Multiply shading (same mirror logic)
+      const shadingImg = await loadImage(getImageURL(state.selectedHandle));
+      if (shadingImg) {
+        finalCtx.globalCompositeOperation = "multiply";
+        finalCtx.save();
+        if (isLeft) {
+          finalCtx.translate(hX + hW / 2, hY + hH / 2);
+          finalCtx.scale(-1, 1);
+          finalCtx.drawImage(shadingImg, -hW / 2, -hH / 2, hW, hH);
+        } else {
+          finalCtx.drawImage(shadingImg, hX, hY, hW, hH);
+        }
+        finalCtx.restore();
         finalCtx.globalCompositeOperation = "source-over";
       }
     }
+    // Step 7: Internal-only Hinge
+    if (state.currentView === "internal") {
+      const hingeImg = await loadImage(getImageURL("hinge"));
+      if (hingeImg) {
+        const hW = 10;
+        const hH = 40;
+        const gap = 220;
+        const startY = 200;
+
+        const hingeOffsetX = hDef.hingeOffsetX ?? 22;
+        const isLeft = state.handleSide === "left";
+        const hingeX = isLeft ? panelWidth - hW - hingeOffsetX : hingeOffsetX;
+
+        const internalFinishData = finishColorMap[state.selectedInternalFinish] || { color: "#000" };
+        const tintedHinge = tintImage(hingeImg, internalFinishData.color);
+
+        for (let i = 0; i < 2; i++) {
+          const y = startY + i * gap;
+
+          // 1. Draw tinted base
+          finalCtx.drawImage(tintedHinge, hingeX, y, hW, hH);
+
+          // 2. Multiply original hinge on top
+          finalCtx.globalCompositeOperation = "multiply";
+          finalCtx.drawImage(hingeImg, hingeX, y, hW, hH);
+          finalCtx.globalCompositeOperation = "source-over";
+        }
+      }
+    }
   }
+}
 
-  // Multiply the frame elements onto it
-  finalCtx.globalCompositeOperation = "multiply";
-  finalCtx.drawImage(elementsCanvas, 0, 0);
-  finalCtx.globalCompositeOperation = "source-over";
 
-   // Optional threshold or highlight overlay
-   const thresholdOverlayConfig = {
+// Step 8: Letterplate
+if (state.selectedLetterplate && state.selectedLetterplate !== "none") {
+  const lpDef = letterplateDefs.find(def => def.id === state.selectedLetterplate);
+  if (lpDef) {
+    const plateImg = await loadImage(getImageURL("letterplate")); // Always use static name
+    if (plateImg) {
+      const lpW = lpDef.width;
+      const lpH = lpDef.height;
+
+      const lpX = (panelWidth - lpW) / 2;
+      const lpY = panelHeight - lpH - lpDef.offsetY;
+
+      const tintedPlate = tintImage(
+        plateImg,
+        hardwareColorMap[state.selectedHardwareColor] || "#000"
+      );
+
+      finalCtx.drawImage(tintedPlate, lpX, lpY, lpW, lpH);
+
+      // Multiply original image over the tinted version
+      finalCtx.globalCompositeOperation = "multiply";
+      finalCtx.drawImage(plateImg, lpX, lpY, lpW, lpH);
+      finalCtx.globalCompositeOperation = "source-over";
+    }
+  }
+}
+
+
+
+  // Optional threshold overlay
+  const thresholdOverlayConfig = {
     visible: true,
     xFactor: 0.07,
     yFactor: 0.989,
     widthFactor: 0.86,
-    height: 20,                      // <--- fixed height
+    height: 20,
     fillStyle: "rgb(236, 236, 236)",
-    blend: null
+    blend: null,
   };
-  
+
   if (thresholdOverlayConfig.visible) {
     const threshX = thresholdOverlayConfig.xFactor * panelWidth;
     const threshY = thresholdOverlayConfig.yFactor * panelHeight;
     const threshW = thresholdOverlayConfig.widthFactor * panelWidth;
-    const threshH = thresholdOverlayConfig.height ?? (thresholdOverlayConfig.heightFactor * panelHeight);
+    const threshH = thresholdOverlayConfig.height;
     finalCtx.globalCompositeOperation = thresholdOverlayConfig.blend;
     finalCtx.fillStyle = thresholdOverlayConfig.fillStyle;
     finalCtx.fillRect(threshX, threshY, threshW, threshH);
     finalCtx.globalCompositeOperation = "source-over";
   }
+
+  // Glossy panel overlay
   const panelOverlayConfig = {
     visible: true,
     xFactor: 0.13,
-    yFactor: 0.960,
+    yFactor: 0.96,
     widthFactor: 0.74,
-    height: 5, // 
+    height: 5,
     fillStyle: "rgba(255, 255, 255, 0.35)",
-    blend: "overlay"
+    blend: "overlay",
   };
-  
+
   if (panelOverlayConfig.visible) {
     const ovX = panelOverlayConfig.xFactor * panelWidth;
     const ovY = panelOverlayConfig.yFactor * panelHeight;
     const ovW = panelOverlayConfig.widthFactor * panelWidth;
-    const ovH = panelOverlayConfig.height ?? (panelOverlayConfig.heightFactor * panelHeight); // fallback
+    const ovH = panelOverlayConfig.height;
     finalCtx.globalCompositeOperation = panelOverlayConfig.blend;
     finalCtx.fillStyle = panelOverlayConfig.fillStyle;
     finalCtx.fillRect(ovX, ovY, ovW, ovH);
     finalCtx.globalCompositeOperation = "source-over";
   }
+
+  // lighting overlay
+  const lightingOverlayConfig = {
+    visible: true,
+    xFactor: 0,
+    yFactor: 0,
+    widthFactor: 1,
+    height: 300,
+    fillStyle: "rgba(255, 255, 255, 0)",
+    blend: "overlay",
+  };
+
+  if (lightingOverlayConfig.visible) {
+    const ovX = lightingOverlayConfig.xFactor * panelWidth;
+    const ovY = lightingOverlayConfig.yFactor * panelHeight;
+    const ovW = lightingOverlayConfig.widthFactor * panelWidth;
+    const ovH = lightingOverlayConfig.height;
+    finalCtx.globalCompositeOperation = lightingOverlayConfig.blend;
+    finalCtx.fillStyle = lightingOverlayConfig.fillStyle;
+    finalCtx.fillRect(ovX, ovY, ovW, ovH);
+    finalCtx.globalCompositeOperation = "source-over";
+  }
+
 
   return finalCanvas;
 }
@@ -315,112 +532,19 @@ async function buildSidePanelComposite(targetWidth, targetHeight, finish) {
   const sidescreenStyle = sidescreenStyleDefs.find(s => s.id === state.selectedSidescreenStyle);
   const isMatchingStyle = sidescreenStyle?.id === "match-door-style";
   const matchedStyle = isMatchingStyle
-  ? doorStyles.find(s => s.name === state.selectedStyle)
-  : null;
+    ? doorStyles.find(s => s.name === state.selectedStyle)
+    : null;
 
-  // Offscreen canvas for frame elements
-  const elementsCanvas = document.createElement("canvas");
-  elementsCanvas.width = targetWidth;
-  elementsCanvas.height = targetHeight;
-  const elementsCtx = elementsCanvas.getContext("2d");
-
-  const sidescreenPanelElements = [
-    
-    { id: "top-frame", mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 }, options: { imageURL: getImageURL("frame-top") } },
-  { id: "bottom-frame", mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 }, options: { imageURL: getImageURL("frame-top"), flipVertical: true } },
-  
-  // Left/right vertical frames: fixed width, scaling height
-  { id: "left-frame", mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 }, options: { imageURL: getImageURL("frame") } },
-  { id: "right-frame", mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 }, options: { imageURL: getImageURL("frame"), flipHorizontal: true } },
-  
-  // Corners: fixed position and size
-  { id: "top-left", rect: { x: 0, y: 0, width: 35, height: 35 }, options: { imageURL: getImageURL("corner") } },
-  { id: "top-right", rect: { x: "right", y: 0, width: 35, height: 35 }, options: { imageURL: getImageURL("corner"), flipHorizontal: true } },
-  { id: "bottom-left", rect: { x: 0, y: "bottom", width: 35, height: 35 }, options: { imageURL: getImageURL("corner"), flipVertical: true } },
-  { id: "bottom-right", rect: { x: "right", y: "bottom", width: 35, height: 35 }, options: { imageURL: getImageURL("corner"), flipHorizontal: true, flipVertical: true } },
-  
-  ];
-
-  
-  // Append extra style-defined elements if present
-  if (sidescreenStyle?.panelElements) {
-    sidescreenPanelElements.push(...sidescreenStyle.panelElements);
-    console.log("Extra sidescreen elements:", sidescreenStyle.panelElements);
-  }
-// Draw sidescreen frames
-for (let el of sidescreenPanelElements) {
-  let rect;
-
-  if (el.rect) {
-    const r = el.rect;
-
-    const width = r.width === "full" ? targetWidth : r.width;
-    let x = r.x;
-    if (x === "right") x = targetWidth - width;
-    else if (typeof x !== "number") x = 0;
-
-    let y;
-    if (r.align === "centerY") {
-      y = (targetHeight - r.height) / 2;
-    } else if (r.y === "bottom") {
-      y = targetHeight - r.height;
-    } else {
-      y = r.y ?? 0;
-    }
-
-    rect = {
-      x,
-      y,
-      width,
-      height: r.height
-    };
-  } else if (el.mixedRect) {
-    const m = el.mixedRect;
-    rect = {
-      x: m.x !== undefined
-        ? (m.x === "right" ? targetWidth - m.width : m.x)
-        : (m.xFactor !== undefined ? m.xFactor * targetWidth : 0),
-      y: m.y !== undefined
-        ? (m.y === "bottom" ? targetHeight - m.height : m.y)
-        : (m.yFactor !== undefined ? m.yFactor * targetHeight : 0),
-      width: m.width !== undefined ? m.width : (m.widthFactor * targetWidth),
-      height: m.height !== undefined ? m.height : (m.heightFactor * targetHeight)
-    };
-  } else if (el.rectFactor) {
-    rect = {
-      x: el.rectFactor.x * targetWidth,
-      y: el.rectFactor.y * targetHeight,
-      width: el.rectFactor.width * targetWidth,
-      height: el.rectFactor.height * targetHeight
-    };
-  } else {
-    console.warn("Missing shape data in sidescreen element:", el);
-    continue;
-  }
-
-  await drawPanelElement(elementsCtx, rect, el.options);
-}
-
-  // Draw the sidescreen style texture (if applicable)
-  let grooveId = sidescreenStyle?.texture;
-
-  if (grooveId === "match") {
-    // Can match on any sidescreen style
-    const matched = doorStyles.find(s => s.name === state.selectedStyle);
-    grooveId = matched?.styleAssets?.texture;
-  }
-
-  // Create final canvas
   const finalCanvas = document.createElement("canvas");
   finalCanvas.width = targetWidth;
   finalCanvas.height = targetHeight;
   const finalCtx = finalCanvas.getContext("2d");
 
-  // Fill base color
+  // Step 1: Base fill
   finalCtx.fillStyle = baseColor;
   finalCtx.fillRect(0, 0, targetWidth, targetHeight);
 
-  // Draw finish texture
+  // Step 2: Texture
   if (textureURL) {
     const textureImg = await loadImage(textureURL);
     if (textureImg) {
@@ -430,168 +554,306 @@ for (let el of sidescreenPanelElements) {
     }
   }
 
-  // Draw groove texture from style (if applicable)
-  const grooveDef = textureDefs.find(t => t.id === grooveId);
-  if (grooveDef && grooveDef.image) {
-    const grooveImg = await loadImage(getImageURL(grooveDef.image));
-    if (grooveImg) {
-      const marginX = grooveDef.marginX ?? grooveDef.margin ?? 0;
-      const marginY = grooveDef.marginY ?? grooveDef.margin ?? 0;
-  
-      const grooveX = marginX;
-      const grooveY = marginY;
-      const grooveW = targetWidth - marginX * 2;
-      const grooveH = targetHeight - marginY * 2;
-  
-      finalCtx.globalCompositeOperation = "multiply";
-      finalCtx.drawImage(grooveImg, grooveX, grooveY, grooveW, grooveH);
-      finalCtx.globalCompositeOperation = "source-over";
-    }
+// Step 3: Groove
+const grooveTextureId = doorStyles.find(s => s.name === state.selectedStyle)?.styleAssets?.texture;
+const grooveDef = textureDefs.find(t => t.id === grooveTextureId);
+if (grooveDef && grooveDef.image) {
+  const grooveImg = await loadImage(getImageURL(grooveDef.image));
+  if (grooveImg) {
+    finalCtx.globalCompositeOperation = "multiply";
+    finalCtx.drawImage(grooveImg, 0, 0, targetWidth, targetHeight);
+    finalCtx.globalCompositeOperation = "source-over";
   }
+}
 
-  let moldingId = sidescreenStyle?.molding;
+  // Step 4: Frame
+  const frameElements = [
+    {
+      id: "top-frame",
+      mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
+      options: { imageURL: getImageURL("frame-top") },
+    },
+    {
+      id: "bottom-frame",
+      mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 },
+      options: { imageURL: getImageURL("frame-top"), flipVertical: true },
+    },
+    {
+      id: "left-frame",
+      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: getImageURL("frame") },
+    },
+    {
+      id: "right-frame",
+      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: getImageURL("frame"), flipHorizontal: true },
+    },
+    {
+      id: "top-left",
+      rect: { x: 0, y: 0, width: 35, height: 35 },
+      options: { imageURL: getImageURL("corner") },
+    },
+    {
+      id: "top-right",
+      rect: { x: "right", y: 0, width: 35, height: 35 },
+      options: { imageURL: getImageURL("corner"), flipHorizontal: true },
+    },
+    {
+      id: "bottom-left",
+      rect: { x: 0, y: "bottom", width: 35, height: 35 },
+      options: { imageURL: getImageURL("corner"), flipVertical: true },
+    },
+    {
+      id: "bottom-right",
+      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      options: { imageURL: getImageURL("corner"), flipHorizontal: true, flipVertical: true },
+    },
+  ];
 
-  if (sidescreenStyle?.id === "match-door-style" || moldingId === "match") {
-    const matched = doorStyles.find(s => s.name === state.selectedStyle);
-    moldingId = matched?.styleAssets?.molding;
-  }
+  const frameMask = buildMoldingMask({ elements: frameElements }, targetWidth, targetHeight);
+  const frameCanvas = await composeElementGroup({
+    width: targetWidth,
+    height: targetHeight,
+    baseColor,
+    textureURL,
+    elements: frameElements,
+    mask: frameMask,
+  });
 
-  // Draw frame elements
-  finalCtx.globalCompositeOperation = "multiply";
-  finalCtx.drawImage(elementsCanvas, 0, 0);
+  finalCtx.drawImage(frameCanvas, 0, 0);
   finalCtx.globalCompositeOperation = "source-over";
 
-  if (sidescreenStyle?.molding) {
-    const moldDef = moldingDefs.find(m => m.id === sidescreenStyle.molding);
-    if (moldDef && Array.isArray(moldDef.elements)) {
-      const moldW = moldDef.width;
-      const moldH = moldDef.height;
-  
-      const moldingCanvas = document.createElement("canvas");
-      moldingCanvas.width = moldW;
-      moldingCanvas.height = moldH;
-      const moldingCtx = moldingCanvas.getContext("2d");
-  
-      // Apply color and texture
-      moldingCtx.fillStyle = baseColor;
-      moldingCtx.fillRect(0, 0, moldW, moldH);
-  
-      if (textureURL) {
-        const textureImg = await loadImage(textureURL);
-        if (textureImg) {
-          moldingCtx.globalCompositeOperation = textureBlend;
-          moldingCtx.drawImage(textureImg, 0, 0, moldW, moldH);
-          moldingCtx.globalCompositeOperation = "source-over";
+  // Step 5: Glazing (from sidescreenStyleDef if defined)
+const glazeId = sidescreenStyle?.glazing;
+const glazeDef = sidescreenGlazingDefs.find(g => g.id === glazeId);
+
+if (glazeDef && glazeDef.image) {
+  const glazeImg = await loadImage(getImageURL(glazeDef.image));
+  if (glazeImg) {
+    const marginX = glazeDef.marginX ?? glazeDef.margin ?? 0;
+    const marginY = glazeDef.marginY ?? glazeDef.margin ?? 0;
+    const offsetX = glazeDef.offsetX ?? 0;
+    const offsetY = glazeDef.offsetY ?? 0;
+
+    const gx = marginX + offsetX;
+    const gy = marginY + offsetY;
+    const gw = targetWidth - marginX * 2;
+    const gh = targetHeight - marginY * 2;
+
+    finalCtx.drawImage(glazeImg, gx, gy, gw, gh);
+  }
+}
+
+// Step 6: Optional Mid Frame Overlay
+if (Array.isArray(sidescreenStyle?.midFrameElements)) {
+  const elements = JSON.parse(JSON.stringify(sidescreenStyle.midFrameElements));
+  const groupWidth = targetWidth;
+  const groupHeight = sidescreenStyle.midFrameHeight ?? 35;
+  const offsetY = sidescreenStyle.midFrameOffsetY ?? 0;
+
+  // Update all elements to ensure rects are absolute
+  for (const el of elements) {
+    const r = el.rect;
+    if (!r) continue;
+
+    const w = r.width ?? (r.widthFactor ?? 0) * groupWidth;
+    const h = r.height ?? (r.heightFactor ?? 0) * groupHeight;
+
+    const x = r.x === "left"
+      ? 0
+      : r.x === "right"
+      ? groupWidth - w
+      : r.x === "centre"
+      ? (groupWidth - w) / 2
+      : r.x ?? 0;
+
+    const y = r.y === "centre"
+      ? (groupHeight - h) / 2
+      : r.y === "bottom"
+      ? groupHeight - h
+      : r.y ?? 0;
+
+    el.rect = { x, y, width: w, height: h };
+    delete el.mixedRect;
+  }
+
+  const midFrameCanvas = await composeElementGroup({
+    width: groupWidth,
+    height: groupHeight,
+    baseColor,
+    textureURL,
+    elements,
+    mask: null // no mask needed here
+  });
+
+  const drawY = (targetHeight - groupHeight) / 2 + offsetY;
+  finalCtx.drawImage(midFrameCanvas, 0, drawY);
+  finalCtx.globalCompositeOperation = "source-over";
+}
+
+  // If match-door-style, apply matching molding and glazing
+  if (sidescreenStyle?.id === "match-door-style") {
+    const matchedStyle = doorStyles.find(s => s.name === state.selectedStyle);
+
+    // --- MOLDING ---
+    const moldingDef = matchedStyle?.styleAssets?.molding
+      ? moldingDefs.find(m => m.id === matchedStyle.styleAssets.molding)
+      : null;
+
+    if (moldingDef) {
+      const moldingElements = [];
+
+      if (moldingDef?.repeat && moldingDef?.cell?.elements) {
+        const { rows, cols, gapX = 0, gapY = 0 } = moldingDef.repeat;
+        const { width: cellW, height: cellH, elements: cellElements } = moldingDef.cell;
+
+        const totalGridWidth = cols * cellW + (cols - 1) * gapX;
+        const totalGridHeight = rows * cellH + (rows - 1) * gapY;
+        const gridOffsetX = (moldingDef.width - totalGridWidth) / 2;
+        const gridOffsetY = (moldingDef.height - totalGridHeight) / 2;
+
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            const cellOffsetX = gridOffsetX + col * (cellW + gapX);
+            const cellOffsetY = gridOffsetY + row * (cellH + gapY);
+
+            for (const el of cellElements) {
+              const cloned = JSON.parse(JSON.stringify(el));
+              if (cloned.rect) {
+                const r = cloned.rect;
+                const w = r.width === "full" ? cellW : r.width;
+                const x = r.x === "right" ? cellW - w : r.x ?? 0;
+                const y = r.y === "bottom" ? cellH - r.height : r.y ?? 0;
+                cloned.rect = {
+                  x: cellOffsetX + x,
+                  y: cellOffsetY + y,
+                  width: w,
+                  height: r.height
+                };
+              } else if (cloned.mixedRect) {
+                const m = cloned.mixedRect;
+                cloned.rect = {
+                  x: cellOffsetX + (m.x === "right" ? cellW - m.width : m.x ?? m.xFactor * cellW),
+                  y: cellOffsetY + (m.y === "bottom" ? cellH - m.height : m.y ?? m.yFactor * cellH),
+                  width: m.width ?? m.widthFactor * cellW,
+                  height: m.height ?? m.heightFactor * cellH
+                };
+              }
+              moldingElements.push(cloned);
+            }
+          }
+        }
+      } else if (moldingDef?.elements) {
+        moldingElements.push(...JSON.parse(JSON.stringify(moldingDef.elements)));
+      }
+
+      const moldW = moldingDef.width;
+      const moldH = moldingDef.height;
+
+      const moldingCanvas = await composeElementGroup({
+        width: moldW,
+        height: moldH,
+        baseColor: baseColor,
+        textureURL: textureURL,
+        elements: moldingElements,
+        mask: buildMoldingMask({ elements: moldingElements }, moldW, moldH)
+      });
+
+      const moldX =
+        moldingDef.align === "left"
+          ? 0 + (moldingDef.offsetX ?? 0)
+          : moldingDef.align === "right"
+          ? targetWidth - moldW + (moldingDef.offsetX ?? 0)
+          : (targetWidth - moldW) / 2 + (moldingDef.offsetX ?? 0);
+
+      const moldY = targetHeight - moldH - (moldingDef.offsetY ?? 0);
+
+      finalCtx.drawImage(moldingCanvas, moldX, moldY);
+    }
+
+    // --- GLAZING ---
+    const glazingDef = glazingDefs.find(g => g.id === state.selectedGlazing);
+    const override = glazingDef?.styleOverrides?.[state.selectedStyle] || {};
+    const glazeW = override.width ?? glazingDef.width;
+    const glazeH = override.height ?? glazingDef.height;
+    const glazeOffsetY = override.offsetY ?? glazingDef.offsetY ?? 0;
+
+    let imageKey = override.image ?? glazingDef.image;
+
+    if (state.glazingObscureEnabled) {
+      imageKey = state.currentView === "internal"
+        ? override.obscureInternal ?? glazingDef.obscureInternal ?? imageKey
+        : override.obscureExternal ?? glazingDef.obscureExternal ?? imageKey;
+    }
+
+    const elements = override.elements ?? glazingDef.elements;
+    const glazeCanvas = document.createElement("canvas");
+    glazeCanvas.width = glazeW;
+    glazeCanvas.height = glazeH;
+    const glazeCtx = glazeCanvas.getContext("2d");
+
+    if (override.repeat && override.cell?.elements) {
+      const { rows, cols, gapX = 0, gapY = 0 } = override.repeat;
+      const cellW = override.cell.width;
+      const cellH = override.cell.height;
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const offsetX = col * (cellW + gapX);
+          const offsetY = row * (cellH + gapY);
+          for (const el of override.cell.elements) {
+            let rect;
+            if (el.rect) {
+              const r = el.rect;
+              const w = r.width === "full" ? cellW : r.width;
+              const x = r.x === "right" ? cellW - w : r.x ?? 0;
+              const y = r.align === "centerY" ? (cellH - r.height) / 2 : r.y === "bottom" ? cellH - r.height : r.y ?? 0;
+              rect = { x: offsetX + x, y: offsetY + y, width: w, height: r.height };
+            } else if (el.mixedRect) {
+              const m = el.mixedRect;
+              rect = {
+                x: offsetX + (m.x === "right" ? cellW - m.width : m.x ?? m.xFactor * cellW),
+                y: offsetY + (m.y === "bottom" ? cellH - m.height : m.y ?? m.yFactor * cellH),
+                width: m.width ?? m.widthFactor * cellW,
+                height: m.height ?? m.heightFactor * cellH
+              };
+            }
+            await drawPanelElement(glazeCtx, rect, el.options);
+          }
         }
       }
-  
-      // Draw molding elements
-      for (const el of moldDef.elements) {
+    } else if (Array.isArray(elements)) {
+      for (const el of elements) {
         let rect;
-  
         if (el.rect) {
           const r = el.rect;
-          const width = r.width === "full" ? moldW : r.width;
-          const x = r.x === "right" ? moldW - width : r.x ?? 0;
-          const y = r.align === "centerY"
-            ? (moldH - r.height) / 2
-            : r.y === "bottom"
-            ? moldH - r.height
-            : r.y ?? 0;
-  
-          rect = { x, y, width, height: r.height };
+          const w = r.width === "full" ? glazeW : r.width;
+          const x = r.x === "right" ? glazeW - w : r.x ?? 0;
+          const y = r.align === "centerY" ? (glazeH - r.height) / 2 : r.y === "bottom" ? glazeH - r.height : r.y ?? 0;
+          rect = { x, y, width: w, height: r.height };
         } else if (el.mixedRect) {
           const m = el.mixedRect;
           rect = {
-            x: m.x !== undefined
-              ? (m.x === "right" ? moldW - m.width : m.x)
-              : (m.xFactor ?? 0) * moldW,
-            y: m.y !== undefined
-              ? (m.y === "bottom" ? moldH - m.height : m.y)
-              : (m.yFactor ?? 0) * moldH,
-            width: m.width ?? m.widthFactor * moldW,
-            height: m.height ?? m.heightFactor * moldH
+            x: m.x === "right" ? glazeW - m.width : m.x ?? m.xFactor * glazeW,
+            y: m.y === "bottom" ? glazeH - m.height : m.y ?? m.yFactor * glazeH,
+            width: m.width ?? m.widthFactor * glazeW,
+            height: m.height ?? m.heightFactor * glazeH
           };
-        } else {
-          console.warn("Missing rect for molding element:", el);
-          continue;
         }
-  
-        await drawPanelElement(moldingCtx, rect, el.options);
+        await drawPanelElement(glazeCtx, rect, el.options);
       }
-  
-      // Calculate position on final canvas
-      const x = moldDef.align === "left"
-        ? 40
-        : moldDef.align === "right"
-        ? targetWidth - moldW - 40
-        : (targetWidth - moldW) / 2;
-  
-      const y = targetHeight - moldH - moldDef.offsetY;
-  
-      finalCtx.globalCompositeOperation = "multiply";
-      finalCtx.drawImage(moldingCanvas, x, y);
-      finalCtx.globalCompositeOperation = "source-over";
+    } else if (imageKey) {
+      const img = await loadImage(getImageURL(imageKey));
+      if (img) glazeCtx.drawImage(img, 0, 0, glazeW, glazeH);
     }
+
+    const glazeX = (targetWidth - glazeW) / 2;
+    const glazeY = targetHeight - glazeH - glazeOffsetY;
+    finalCtx.drawImage(glazeCanvas, glazeX, glazeY);
   }
-
-// ✅ Draw glazing from sidescreen style
-let glazingId = sidescreenStyle?.glazing;
-if (glazingId === "match") {
-  glazingId = state.selectedGlazing;
-}
-
-const glazeDef = sidescreenGlazingDefs.find(g => g.id === glazingId);
-if (glazeDef && glazeDef.image) {
-  const img = await loadImage(getImageURL(glazeDef.image));
-  if (img) {
-    // 🔁 Margin-based full-glazing
-    if ("margin" in glazeDef || "marginX" in glazeDef || "marginY" in glazeDef || glazeDef.halfPanelMargins) {
-      let marginX = glazeDef.marginX ?? glazeDef.margin ?? 0;
-      let topMargin = glazeDef.marginY ?? glazeDef.margin ?? 0;
-      let bottomMargin = topMargin;
-
-      if (glazeDef.halfPanelMargins) {
-        marginX = 35;
-        topMargin = 35;
-
-        if (glazeDef.clearPosition === "bottom") {
-          // Bottom clear → shift margin to top
-          topMargin = (targetHeight / 2) + (35 / 2);
-          bottomMargin = 35;
-        } else {
-          // Default is top clear
-          bottomMargin = (targetHeight / 2) + (35 / 2);
-        }
-      }
-
-      const gx = marginX;
-      const gy = topMargin;
-      const gw = targetWidth - marginX * 2;
-      const gh = targetHeight - topMargin - bottomMargin;
-
-      finalCtx.drawImage(img, gx, gy, gw, gh);
-    } else {
-      // 🎯 Fixed size, aligned glazing
-      const gw = glazeDef.width;
-      const gh = glazeDef.height;
-
-      const gx = glazeDef.align === "left"
-        ? 40
-        : glazeDef.align === "right"
-        ? targetWidth - gw - 40
-        : (targetWidth - gw) / 2;
-
-      const gy = targetHeight - gh - glazeDef.offsetY;
-
-      finalCtx.drawImage(img, gx, gy, gw, gh);
-    }
-  }
-}
 
   return finalCanvas;
 }
-
 
 /*
    ---------------------------------------------
@@ -603,16 +865,14 @@ async function updateCanvasPreview() {
   try {
     const { displayPixels, scaleFactor } = getDoorPanelDimensionsFromInput();
     const panelHeight = displayPixels.height;
-    const panelWidth = displayPixels.width
+    const panelWidth = displayPixels.width;
     const sidescreenDims = getSidescreenDimensionsFromInput();
-const leftWidth = sidescreenDims.left.displayPixels;
-const rightWidth = sidescreenDims.right.displayPixels;
+    const leftWidth = sidescreenDims.left.displayPixels;
+    const rightWidth = sidescreenDims.right.displayPixels;
 
-    // Determine finish data for external or internal
     const finishKey = (state.currentView === "external") ? state.selectedExternalFinish : state.selectedInternalFinish;
     const finishData = finishColorMap[finishKey] || { color: "#ddd", texture: null, textureBlend: "source-over" };
 
-    // Build sidescreens if needed
     let leftSidePanel = null;
     let rightSidePanel = null;
     if (state.selectedConfiguration === "single-left" || state.selectedConfiguration === "single-both") {
@@ -622,10 +882,8 @@ const rightWidth = sidescreenDims.right.displayPixels;
       rightSidePanel = await buildSidePanelComposite(rightWidth, panelHeight, finishData);
     }
 
-    // Build main door panel
     const panelCanvas = await buildPanelComposite(panelWidth, panelHeight, finishData);
 
-    // Prepare preview canvas
     const previewCanvas = document.getElementById("previewCanvas");
     let totalWidth = panelWidth;
     if (leftSidePanel) totalWidth += leftWidth;
@@ -635,321 +893,29 @@ const rightWidth = sidescreenDims.right.displayPixels;
     const ctx = previewCanvas.getContext("2d");
     ctx.clearRect(0, 0, totalWidth, panelHeight);
 
-    // Draw left sidescreen if present
     let offsetX = 0;
     if (leftSidePanel) {
       ctx.drawImage(leftSidePanel, 0, 0);
       offsetX += leftWidth;
-      let doorOffsetX = offsetX;
     }
-    
-    // Draw main door panel
+
     ctx.drawImage(panelCanvas, offsetX, 0);
 
-    // Look up style
-    const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
-  
-    // Moldings
 
-    if (styleObj?.styleAssets?.molding) {
-      const moldDef = moldingDefs.find(m => m.id === styleObj.styleAssets.molding);
-      if (!moldDef) return;
-    
-      const moldW = moldDef.width;
-      const moldH = moldDef.height;
-    
-      // --- 1. Texture fill base layer ---
-      const textureCanvas = document.createElement("canvas");
-      textureCanvas.width = moldW;
-      textureCanvas.height = moldH;
-      const textureCtx = textureCanvas.getContext("2d");
-    
-      textureCtx.fillStyle = finishData.color || "#ccc";
-      textureCtx.fillRect(0, 0, moldW, moldH);
-    
-      if (finishData.texture) {
-        const textureImg = await loadImage(finishData.texture);
-        if (textureImg) {
-          textureCtx.globalCompositeOperation = finishData.textureBlend || "source-over";
-          textureCtx.drawImage(textureImg, 0, 0, moldW, moldH);
-          textureCtx.globalCompositeOperation = "source-over";
-        }
-      }
-    
-      // --- 2. Build mask canvas ---
-      const maskCanvas = document.createElement("canvas");
-      maskCanvas.width = moldW;
-      maskCanvas.height = moldH;
-      const maskCtx = maskCanvas.getContext("2d");
-    
-      const drawElements = async (ctx, elements, w, h, offsetX = 0, offsetY = 0, drawImages = false) => {
-        for (const el of elements) {
-          let rect;
-          if (el.rect) {
-            const r = el.rect;
-            const width = r.width === "full" ? w : r.width;
-            const x = offsetX + (r.x === "right" ? w - width : r.x ?? 0);
-            const y = offsetY + (
-              r.align === "centerY"
-                ? (h - r.height) / 2
-                : r.y === "bottom"
-                ? h - r.height
-                : r.y ?? 0
-            );
-            rect = { x, y, width, height: r.height };
-          } else if (el.mixedRect) {
-            const m = el.mixedRect;
-            rect = {
-              x: offsetX + (
-                m.x !== undefined
-                  ? (m.x === "right" ? w - m.width : m.x)
-                  : (m.xFactor ?? 0) * w
-              ),
-              y: offsetY + (
-                m.y !== undefined
-                  ? (m.y === "bottom" ? h - m.height : m.y)
-                  : (m.yFactor ?? 0) * h
-              ),
-              width: m.width ?? m.widthFactor * w,
-              height: m.height ?? m.heightFactor * h
-            };
-          } else {
-            console.warn("Missing rect for molding element:", el);
-            continue;
-          }
-    
-          const img = await loadImage(el.options.imageURL);
-          if (!img) continue;
-    
-          ctx.save();
-          ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
-          if (el.options.rotation) ctx.rotate((el.options.rotation * Math.PI) / 180);
-          const scaleX = el.options.flipHorizontal ? -1 : 1;
-          const scaleY = el.options.flipVertical ? -1 : 1;
-          ctx.scale(scaleX, scaleY);
-          ctx.drawImage(img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
-          ctx.restore();
-        }
-      };
-    
-      // --- 3. Draw mask shapes ---
-      if (moldDef.repeat && moldDef.cell?.elements) {
-        const { rows, cols, gapX = 0, gapY = 0 } = moldDef.repeat;
-        const cellW = moldDef.cell.width;
-        const cellH = moldDef.cell.height;
-    
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < cols; col++) {
-            const offsetX = col * (cellW + gapX);
-            const offsetY = row * (cellH + gapY);
-            await drawElements(maskCtx, moldDef.cell.elements, cellW, cellH, offsetX, offsetY);
-          }
-        }
-      } else if (Array.isArray(moldDef.elements)) {
-        await drawElements(maskCtx, moldDef.elements, moldW, moldH);
-      }
-    
-      // --- 4. Mask texture using the shape ---
-      textureCtx.globalCompositeOperation = "destination-in";
-      textureCtx.drawImage(maskCanvas, 0, 0);
-      textureCtx.globalCompositeOperation = "source-over";
-    
-      // --- 5. Draw artwork elements onto the texture canvas and multiply them only ---
-      const artworkCanvas = document.createElement("canvas");
-      artworkCanvas.width = moldW;
-      artworkCanvas.height = moldH;
-      const artworkCtx = artworkCanvas.getContext("2d");
-    
-      if (moldDef.repeat && moldDef.cell?.elements) {
-        const { rows, cols, gapX = 0, gapY = 0 } = moldDef.repeat;
-        const cellW = moldDef.cell.width;
-        const cellH = moldDef.cell.height;
-    
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < cols; col++) {
-            const offsetX = col * (cellW + gapX);
-            const offsetY = row * (cellH + gapY);
-            await drawElements(artworkCtx, moldDef.cell.elements, cellW, cellH, offsetX, offsetY);
-          }
-        }
-      } else if (Array.isArray(moldDef.elements)) {
-        await drawElements(artworkCtx, moldDef.elements, moldW, moldH);
-      }
-    
-      textureCtx.globalCompositeOperation = "multiply";
-      textureCtx.drawImage(artworkCanvas, 0, 0);
-      textureCtx.globalCompositeOperation = "source-over";
-    
-      // --- 6. Draw final molding layer onto door canvas ---
-      const moldX = moldDef.align === "left"
-        ? offsetX + 40 + (moldDef.offsetX ?? 0)
-        : moldDef.align === "right"
-        ? offsetX + (panelWidth - moldW - 40) + (moldDef.offsetX ?? 0)
-        : offsetX + (panelWidth - moldW) / 2 + (moldDef.offsetX ?? 0);
-    
-      const moldY = panelHeight - moldH - (moldDef.offsetY ?? 0);
-    
-      ctx.drawImage(textureCanvas, moldX, moldY);
-    }
-  
-
-// Glazing
-let doorOffsetX = offsetX;
-
-if (state.selectedGlazing !== "none") {
-  const glazeDef = glazingDefs.find(g => g.id === state.selectedGlazing);
-  if (!glazeDef) return;
-
-  const override = glazeDef.styleOverrides?.[state.selectedStyle] || {};
-  const width = override.width ?? glazeDef.width;
-  const height = override.height ?? glazeDef.height;
-  const glazingOffsetX = override.offsetX ?? glazeDef.offsetX ?? 0;
-  const offsetY = override.offsetY ?? glazeDef.offsetY ?? 0;
-  const align = override.align ?? glazeDef.align ?? "center";
-
-  const glazeCanvas = document.createElement("canvas");
-  glazeCanvas.width = width;
-  glazeCanvas.height = height;
-  const glazeCtx = glazeCanvas.getContext("2d");
-
-  // Helper to draw either single images or repeated cells
-  const drawElements = async (ctx, elements, w, h, ox = 0, oy = 0) => {
-    for (const el of elements) {
-      let rect;
-      const img = await loadImage(el.options.imageURL);
-      if (!img) continue;
-
-      if (el.rect) {
-        const r = el.rect;
-        const rw = r.width === "full" ? w : r.width;
-        const rx = ox + (r.x === "right" ? w - rw : r.x ?? 0);
-        const ry = oy + (
-          r.align === "centerY"
-            ? (h - r.height) / 2
-            : r.y === "bottom"
-            ? h - r.height
-            : r.y ?? 0
-        );
-        rect = { x: rx, y: ry, width: rw, height: r.height };
-      } else if (el.mixedRect) {
-        const m = el.mixedRect;
-        rect = {
-          x: ox + (
-            m.x !== undefined
-              ? (m.x === "right" ? w - m.width : m.x)
-              : (m.xFactor ?? 0) * w
-          ),
-          y: oy + (
-            m.y !== undefined
-              ? (m.y === "bottom" ? h - m.height : m.y)
-              : (m.yFactor ?? 0) * h
-          ),
-          width: m.width ?? m.widthFactor * w,
-          height: m.height ?? m.heightFactor * h
-        };
-      } else {
-        continue;
-      }
-
-      ctx.save();
-      ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
-      if (el.options.rotation) ctx.rotate((el.options.rotation * Math.PI) / 180);
-      const scaleX = el.options.flipHorizontal ? -1 : 1;
-      const scaleY = el.options.flipVertical ? -1 : 1;
-      ctx.scale(scaleX, scaleY);
-      ctx.drawImage(img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
-      ctx.restore();
-    }
-  };
-
-  // Grid-based override support
-  if (override.repeat && override.cell?.elements) {
-    const { rows, cols, gapX = 0, gapY = 0 } = override.repeat;
-    const cellW = override.cell.width;
-    const cellH = override.cell.height;
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const ox = col * (cellW + gapX);
-        const oy = row * (cellH + gapY);
-        await drawElements(glazeCtx, override.cell.elements, cellW, cellH, ox, oy);
-      }
-    }
-  } else {
-    // Default image-based fallback
-    let imgKey = override.image ?? glazeDef.image;
-
-if (state.glazingObscureEnabled) {
-  imgKey = state.currentView === "internal"
-    ? override.obscureInternal ?? glazeDef.obscureInternal ?? imgKey
-    : override.obscureExternal ?? glazeDef.obscureExternal ?? imgKey;
-}
-
-const img = await loadImage(getImageURL(imgKey));
-    if (img) {
-      glazeCtx.drawImage(img, 0, 0, width, height);
-    }
-  }
-
-  // Final position (respecting offsetX and alignment)
-  const glazeX = align === "left"
-    ? doorOffsetX + 40 + glazingOffsetX
-    : align === "right"
-    ? doorOffsetX + (panelWidth - width - 40) + glazingOffsetX
-    : doorOffsetX + (panelWidth - width) / 2 + glazingOffsetX;
-
-  const glazeY = panelHeight - height - offsetY;
-
-  ctx.drawImage(glazeCanvas, glazeX, glazeY);
-}
-
-
-
-   if (state.selectedHandle && state.selectedHandle !== "none") {
-  const hDef = handleDefs.find(def => def.id === state.selectedHandle);
-  if (hDef) {
-    const handleImg = await loadImage(getImageURL(state.selectedHandle));
-    if (handleImg) {
-      const hW = hDef.width;
-      const hH = hDef.height;
-
-      const hX = hDef.align === "left"
-        ? offsetX + hDef.offsetX
-        : offsetX + (panelWidth - hW - hDef.offsetX);
-
-      const hY = panelHeight - hH - hDef.offsetY;
-
-      const tintedHandle = tintImage(handleImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
-      ctx.drawImage(tintedHandle, hX, hY, hW, hH);
-
-      const shadingImg = await loadImage(getImageURL(`${state.selectedHandle}`));
-      if (shadingImg) {
-        ctx.globalCompositeOperation = "multiply";
-        ctx.drawImage(shadingImg, hX, hY, hW, hH);
-        ctx.globalCompositeOperation = "source-over";
-      }
-    }
-  }
-}
-
-    // Right side
     if (rightSidePanel) {
       ctx.drawImage(rightSidePanel, offsetX + panelWidth, 0);
     }
 
-    // Flip for internal
     if (state.currentView === "internal") {
       mirrorCanvas(previewCanvas);
     }
 
-    // Produce file name
     const styleName = styleDisplayNames[state.selectedStyle] || state.selectedStyle;
     const finishName = finishDisplayNames[finishKey] || finishKey;
     const glazingName = glazingDisplayNames[state.selectedGlazing] || state.selectedGlazing;
     const fileName = `${styleName}, ${finishName}, ${glazingName} Glass.png`;
-
   } catch (err) {
-    console.error("Error in compositeAndSave:", err);
+    console.error("Error in updateCanvasPreview:", err);
   }
 }
 
@@ -1015,6 +981,7 @@ function addThumbnailClick(type) {
           state.selectedLeftPanel = "sidescreen";
           state.selectedRightPanel = "sidescreen";
         }
+
       
         // 🔁 Auto-select first sidescreen style option
         if (value !== "single") {
@@ -1028,7 +995,29 @@ function addThumbnailClick(type) {
 
       } else if (type === "style") {
         state.selectedStyle = value;
-      
+
+        // Show min/max dimensions above inputs
+        const selectedStyleObj = doorStyles.find(s => s.name === value);
+        const styleSizeInfoEl = document.getElementById("styleSizeInfo");
+        if (selectedStyleObj && styleSizeInfoEl) {
+          styleSizeInfoEl.innerHTML = `
+            <strong>${styleDisplayNames[value] || value}</strong>
+            <div class="row">
+              <div class="label">Width</div>
+              <div class="value-pair">
+                <div>Min: <span>${selectedStyleObj.minWidth.toLocaleString()}</span></div>
+                <div>Max: <span>${selectedStyleObj.maxWidth.toLocaleString()}</span></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="label">Height</div>
+              <div class="value-pair">
+                <div>Min: <span>${selectedStyleObj.minHeight.toLocaleString()}</span></div>
+                <div>Max: <span>${selectedStyleObj.maxHeight.toLocaleString()}</span></div>
+              </div>
+            </div>
+          `;
+        }
         // Refresh thumbnails
         populateGlazingThumbnails(); 
         populateLetterplateThumbnails();
@@ -1049,10 +1038,9 @@ function addThumbnailClick(type) {
           state.selectedSidescreenStyle = firstSideValue;
           markSelected("sidescreenStyle", firstSideValue);
         }
-      
+
         updateCanvasPreview();
         updateSummary();
-    
       
       } else if (type === "sidescreenStyle") {
         state.selectedSidescreenStyle = value;
@@ -1068,12 +1056,14 @@ function addThumbnailClick(type) {
         state.selectedGlazing = value;
       } else if (type === "letterplate") {
         state.selectedLetterplate = value;
+        
       } else if (type === "hardwareColour") {
         state.selectedHardwareColor = value;
       } else if (type === "handle") {
         state.selectedHandle = value;
       }
-
+      
+      
       markSelected(type, value);
       const stepIndex = getStepIndexFromType(type);
       if (stepIndex !== -1) state.stepsCompleted[stepIndex] = true;
@@ -1153,6 +1143,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Step nav
   document.getElementById("backBtn").addEventListener("click", goToPreviousStep);
   document.getElementById("nextBtn").addEventListener("click", goToNextStep);
+
+  document.getElementById("hingeToggleBtn").addEventListener("click", () => {
+    state.handleSide = state.handleSide === "left" ? "right" : "left";
+    updateCanvasPreview();
+    updateSummary();
+  });
 
   // Populate step thumbnails
   populateConfigurationOptions();

@@ -92,7 +92,7 @@
 
       /* Panel 1: Menu Container */
       .menu-container {
-        width: 220px;
+        width: 320px;
         background-color: #fff;
         border-right: 1px solid #ccc;
         display: flex;
@@ -129,6 +129,38 @@
       .step-menu-item:hover {
         background-color: #f5f7fa;
       }
+
+      .style-size-info {
+        margin-left: 15px;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.style-size-info strong {
+  font-size: 17px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.style-size-info .row {
+  display: flex;
+  justify-content: left;
+  max-width: 280px;
+}
+
+.style-size-info .label {
+  min-width: 80px;
+}
+
+.style-size-info .value-pair {
+  display: flex;
+  gap: 16px;
+}
+
+.style-size-info .value-pair span {
+  font-weight: bold;
+}
 
       .panel-size-inputs {
         display: flex;
@@ -333,6 +365,8 @@
         color: #041244;
       }
 
+      
+
       /* -------------------------------------------------
          Visualiser Mode (Unchanged)
       ------------------------------------------------- */
@@ -428,8 +462,13 @@
           <span data-index="5" class="step-menu-item">Hardware</span>
         </div>
 
+        <div id="styleSizeInfo" class="style-size-info">
+          <!-- JS will populate this -->
+        </div>
+
         <!-- Size Inputs -->
         <div class="panel-size-inputs">
+
           <div class="size-input">
             <label for="doorWidthInput">Width</label>
             <input
@@ -476,6 +515,7 @@
               max="600"
             />
           </div>
+          
         </div>
         <!-- Navigation Buttons at the Bottom -->
         <div class="nav-buttons">
@@ -541,22 +581,30 @@
           
           <div class="vertical-icon-bar">
            
+            <button id="hingeToggleBtn">
+              <i class="fa-solid fa-door-open"></i>
+            </button>
+            <label for="viewToggleBtn">Swap Hinge Side</label>
+            <span class="icon-spacer"> </span>
 
             <button id="viewToggleBtn">
               <i class="fa-solid fa-arrow-right-arrow-left"></i>
             </button>
-            <label for="viewToggleBtn">Swap View</label>
+            <label for="viewToggleBtn">Change View</label>
             <span class="icon-spacer"> </span>
+
             <button id="opacityToggleBtn">
               <i class="fa-solid fa-eye"></i>
             </button>
-            <label for="opacityToggleBtn">Opacity</label>
+            <label for="opacityToggleBtn">Toggle Opacity</label>
             <span class="icon-spacer"> </span>
+
             <button id="visualiserToggleBtn">
               <i class="fa-solid fa-image"></i>
             </button>
-            <label for="visualiserToggleBtn">Visualiser</label>
+            <label for="visualiserToggleBtn">Open Visualiser</label>
             <span class="icon-spacer"> </span>
+            
             <button id="saveDesignBtn">
               <i class="fa-solid fa-floppy-disk"></i>
             </button>
