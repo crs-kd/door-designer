@@ -1,315 +1,560 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>CR Smith Calendar</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
-  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Montserrat', sans-serif;
-      background: #fbfdfe;
-      color: #1a1a1a;
-    }
-    .top-bar {
-      background: #0c2340;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 24px;
-    }
-    .top-bar img {
-      height: 30px;
-    }
-    .top-bar a {
-      font-size: 24px;
-      color: white;
-      text-decoration: none;
-    }
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 30px;
-    }
-    .area-select {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .area-button {
-  background: none;
-  border: none;
-  font-size: 16px;
-  padding: 8px 16px 4px;
-  position: relative;
-  cursor: pointer;
-  color: #333;
-  font-weight: 500;
-}
-    .area-button.selected {
-      font-weight: 700;
-    }
-    .area-button.selected::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 3px;
-      background: #f29300;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <title>CR Smith Calendar</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      type="text/javascript"
+      src="https://www.gstatic.com/charts/loader.js"
+    ></script>
+    <style>
+      :root {
+        --cr-navy: #0c2340;
+        --cr-orange: #f29300;
+        --cr-grey: #f5f5f7;
+        --text-light: #777;
+        --text-dark: #111;
+      }
+      body {
+        margin: 0;
+        font-family: "Montserrat", sans-serif;
+        background: #fbfdfe;
+        color: var(--text-dark);
+      }
+      .top-bar {
+        background: var(--cr-navy);
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 32px;
+      }
+      .top-bar img {
+        height: 32px;
+      }
+      .top-bar a {
+        font-size: 28px;
+        color: white;
+        text-decoration: none;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 48px 24px;
+      }
+      .area-select {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 40px;
+      }
+      .area-button {
+        background: none;
+        border: none;
+        font-size: 16px;
+        padding: 10px 12px 6px;
+        position: relative;
+        cursor: pointer;
+        color: #333;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+      }
+      .area-button.selected::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 2px;
+        background: var(--cr-orange);
+      }
+      .calendar-wrapper {
+        display: flex;
+        gap: 48px;
+        align-items: flex-start;
+      }
+      .calendar-box {
+        background: white;
+        border-radius: 8px;
+        padding: 24px 32px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+      }
+      .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        font-weight: 300;
+        font-size: 16px;
+      }
+      .calendar-header button {
+        background: none;
+        border: none;
+        font-size: 22px;
+        color: #333;
+        cursor: pointer;
+      }
+      .calendar-grid {
+        display: flex;
+        gap: 32px;
+        text-align: center;
+      }
+      .month {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: repeat(
+          7,
+          1fr
+        ); /* <- 7 rows: 1 for weekdays + 6 for dates */
+        row-gap: 4px;
+        column-gap: 0px;
+        width: 100%;
+      }
+      .month:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: -16px;
+        width: 1px;
+        height: 100%;
+        background: #ddd;
+      }
+      .weekday {
+        font-size: 13px;
+        font-weight: 500;
+        color: #aaa;
+      }
+      .day {
+        width: 42px;
+        height: 42px;
+        line-height: 42px;
+        text-align: center;
+        font-size: 14px;
+        border-radius: 2px;
+        cursor: pointer;
+      }
 
-    .area-button:hover {
-  background: rgba(0,0,0,0.03);
-}
-    .calendar-wrapper {
-      display: flex;
-      gap: 40px;
-    }
-    .calendar-box, .info-box {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    .calendar-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .calendar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .calendar-header button {
-      background: none;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-    }
-    .calendar-grid {
-      display: flex;
-      gap: 20px;
-    }
-    .month {
-      display: grid;
-      grid-template-columns: repeat(7, 40px);
-      gap: 6px;
-      position: relative;
-      padding-right: 10px;
-    }
-    .month:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: -10px;
-      width: 1px;
-      height: 100%;
-      background: #ddd;
-    }
-    .weekday {
-      font-size: 13px;
-      font-weight: 500;
-      color: #888;
-    }
-    .day {
-      width: 40px;
-      height: 40px;
-      line-height: 40px;
-      border-radius: 8px;
-      text-align: center;
-      cursor: pointer;
-    }
-    .in-range {
-      background: #e5e7eb;
-    }
-    .day.selected {
-      background: #f29300;
-      color: white;
-      font-weight: bold;
-    }
-    .info-box {
-      width: 240px;
-      text-align: center;
-    }
-    .info-box p {
-      margin: 10px 0;
-    }
-    .info-box .discount {
-      font-size: 28px;
-      font-weight: 700;
-      color: #f29300;
-      border-bottom: 3px solid #f29300;
-      display: inline-block;
-      padding-bottom: 4px;
-    }
-  </style>
-</head>
-<body>
-  <div class="top-bar">
-    <img src="https://crs-kd.github.io/door-designer/logo-white.png" alt="CR Smith logo">
-    <div>Flexible Fit Additional Discount Portal</div>
-    <a href="https://crsmith.co.uk/sales">&times;</a>
-  </div>
-  <div class="container">
-    <div class="area-select" id="areaSelect"></div>
-    <div class="calendar-wrapper">
-      <div class="calendar-box">
-        <div class="calendar-header">
-          <button id="prevMonth">&#8592;</button>
-          <div id="monthYear">Month Year</div>
-          <button id="nextMonth">&#8594;</button>
+      .day.in-range {
+        background: #e5e7eb;
+        border-radius: 0; /* Remove rounding for in-range middle days */
+      }
+
+      .day.range-start {
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+      }
+
+      .day.range-end {
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+      }
+      .day.selected {
+        background: var(--cr-orange);
+        color: white;
+        font-weight: 600;
+      }
+      .info-box {
+        width: 320px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+        padding: 32px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: stretch;
+      }
+      .date-line {
+        color: var(--text-light);
+        font-size: 14px;
+        font-weight: 500;
+        text-align: center;
+      }
+      .discount-banner {
+        width: 100%;
+        padding: 26px 0;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 34px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      .discount-banner.active {
+        background: transparent;
+        border: solid 1.3px #c9388a;
+        color: #c9388a;
+      }
+      .discount-banner.inactive {
+        background: transparent;
+        border: solid 2px #f0f0f0;
+        color: #aaa;
+      }
+      .discount-banner small {
+        font-size: 15px;
+        font-weight: 500;
+        margin-top: 4px;
+      }
+      .allocation-line {
+        font-size: 15px;
+        text-align: center;
+        color: #555;
+      }
+      .allocation-line strong {
+        font-weight: 700;
+        color: #111;
+      }
+      .input-box {
+        padding: 10px 0px;
+        font-size: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #f7f7f7;
+        width: 100%;
+      }
+
+      .input-box::placeholder {
+        color: #aaa;
+        font-size: 12px;
+        font-weight: 500;
+        opacity: 1;
+      }
+      .claim-btn {
+        width: 100%;
+        padding: 14px;
+        font-size: 15px;
+        font-weight: 300;
+        border-radius: 4px;
+        border: none;
+        transition: background 0.3s ease;
+      }
+      .claim-btn.enabled {
+        background: var(--cr-navy);
+        color: white;
+        cursor: pointer;
+      }
+      .claim-btn.disabled {
+        background: #e5e7eb;
+        color: #aaa;
+        cursor: not-allowed;
+      }
+
+      @media (max-width: 1024px) {
+        .calendar-wrapper {
+          flex-direction: column;
+          gap: 32px;
+          align-items: stretch;
+        }
+
+        .calendar-box,
+        .info-box {
+          width: 100%;
+          padding: 20px;
+        }
+
+        .calendar-header {
+          font-size: 18px;
+        }
+
+        .day {
+          font-size: 13px;
+          height: 40px;
+        }
+
+        .discount-banner {
+          font-size: 30px;
+          padding: 24px 0;
+        }
+
+        .discount-banner small {
+          font-size: 14px;
+        }
+
+        .input-box,
+        .claim-btn {
+          font-size: 14px;
+          padding: 12px;
+        }
+
+        .top-bar {
+          flex-direction: column;
+          gap: 8px;
+          text-align: center;
+        }
+
+        .area-select {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .container {
+          padding: 32px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top-bar">
+      <img
+        src="https://crs-kd.github.io/door-designer/logo-white.png"
+        alt="CR Smith logo"
+      />
+      <div>Flexible Fit Additional Discount Portal</div>
+      <a href="https://www.crsmith.co.uk/sales/">&times;</a>
+    </div>
+    <div class="container">
+      <div class="area-select" id="areaSelect"></div>
+      <div class="calendar-wrapper">
+        <div class="calendar-box">
+          <div class="calendar-header">
+            <button id="prevMonth">&#8592;</button>
+            <div id="monthYear">Month Year</div>
+            <button id="nextMonth">&#8594;</button>
+          </div>
+          <div class="calendar-grid" id="calendar"></div>
         </div>
-        <div class="calendar-grid" id="calendar"></div>
-      </div>
-      <div class="info-box" id="infoBox">
-        <p>Please select a date</p>
+        <div class="info-box" id="infoBox">
+          <p>Please select a date</p>
+        </div>
       </div>
     </div>
-  </div>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      google.charts.load('current', { packages: ['corechart'] });
-      google.charts.setOnLoadCallback(() => {
-        const areaSelect = document.getElementById('areaSelect');
-        const calendarEl = document.getElementById('calendar');
-        const monthYearEl = document.getElementById('monthYear');
-        const infoBox = document.getElementById('infoBox');
-        const weekdays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-        let viewMonth = 4;
-        let viewYear = 2025;
-        let selectedDate = null;
-        let currentStart = null;
-        let currentEnd = null;
-        let areaRanges = {};
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        google.charts.load("current", { packages: ["corechart"] });
+        google.charts.setOnLoadCallback(() => {
+          const areaSelect = document.getElementById("areaSelect");
+          const calendarEl = document.getElementById("calendar");
+          const monthYearEl = document.getElementById("monthYear");
+          const infoBox = document.getElementById("infoBox");
+          const weekdays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+          let viewMonth = 4;
+          let viewYear = 2025;
+          let selectedDate = null;
+          let currentStart = null;
+          let currentEnd = null;
+          let areaRanges = {};
 
-        function fetchSheetData(callback) {
-          const sheetURL = 'https://docs.google.com/spreadsheets/d/1aCuRAfzTxdZgm1UUdXQbpJFx6GX_1_jcwzJZhc2cfAE/gviz/tq?sheet=CalendarRanges';
-          const query = new google.visualization.Query(sheetURL);
-          query.send(response => {
-            const data = response.getDataTable();
-            const rows = data.getNumberOfRows();
-            areaRanges = {};
-            areaSelect.innerHTML = '';
-            for (let i = 0; i < rows; i++) {
-              const area = data.getValue(i, 0).toLowerCase();
-              const start = new Date(data.getValue(i, 1));
-              const end = new Date(data.getValue(i, 2));
-              areaRanges[area] = { start, end };
-              const button = document.createElement('button');
-              button.className = 'area-button';
-              button.dataset.area = area;
-              button.textContent = area.charAt(0).toUpperCase() + area.slice(1);
-              button.addEventListener('click', () => selectArea(area));
-              areaSelect.appendChild(button);
-            }
-            if (typeof callback === 'function') callback();
-          });
-        }
-
-        function selectArea(area) {
-          document.querySelectorAll('.area-button').forEach(btn => {
-            btn.classList.toggle('selected', btn.dataset.area === area);
-          });
-          if (area && areaRanges[area]) {
-            currentStart = areaRanges[area].start;
-            currentEnd = areaRanges[area].end;
-          } else {
-            currentStart = null;
-            currentEnd = null;
-          }
-          selectedDate = null;
-          renderCalendar();
-          infoBox.innerHTML = '<p>Please select a date</p>';
-        }
-
-        document.getElementById('prevMonth').addEventListener('click', () => {
-          viewMonth--;
-          if (viewMonth < 0) {
-            viewMonth = 11;
-            viewYear--;
-          }
-          renderCalendar();
-        });
-
-        document.getElementById('nextMonth').addEventListener('click', () => {
-          viewMonth++;
-          if (viewMonth > 11) {
-            viewMonth = 0;
-            viewYear++;
-          }
-          renderCalendar();
-        });
-
-        function renderCalendar() {
-          calendarEl.innerHTML = '';
-          const monthsToRender = 2;
-          const firstMonth = viewMonth;
-          const firstYear = viewYear;
-          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                              'July', 'August', 'September', 'October', 'November', 'December'];
-          monthYearEl.textContent = `${monthNames[firstMonth]} ${firstYear} - ${monthNames[(firstMonth + 1) % 12]} ${(firstMonth === 11 ? firstYear + 1 : firstYear)}`;
-          for (let m = 0; m < monthsToRender; m++) {
-            const thisMonth = (firstMonth + m) % 12;
-            const thisYear = firstYear + Math.floor((firstMonth + m) / 12);
-            const monthWrapper = document.createElement('div');
-            monthWrapper.className = 'month';
-            weekdays.forEach(day => {
-              const cell = document.createElement('div');
-              cell.className = 'weekday';
-              cell.textContent = day;
-              monthWrapper.appendChild(cell);
+          function fetchSheetData(callback) {
+            const sheetURL =
+              "https://docs.google.com/spreadsheets/d/1aCuRAfzTxdZgm1UUdXQbpJFx6GX_1_jcwzJZhc2cfAE/gviz/tq?sheet=CalendarRanges";
+            const query = new google.visualization.Query(sheetURL);
+            query.send((response) => {
+              const data = response.getDataTable();
+              const rows = data.getNumberOfRows();
+              areaRanges = {};
+              areaSelect.innerHTML = "";
+              for (let i = 0; i < rows; i++) {
+                const area = data.getValue(i, 0).toLowerCase();
+                const start = new Date(data.getValue(i, 1));
+                const end = new Date(data.getValue(i, 2));
+                const spaces = parseInt(data.getValue(i, 3), 10);
+                areaRanges[area] = { start, end, spaces };
+                const button = document.createElement("button");
+                button.className = "area-button";
+                button.dataset.area = area;
+                button.textContent =
+                  area.charAt(0).toUpperCase() + area.slice(1);
+                button.addEventListener("click", () => selectArea(area));
+                areaSelect.appendChild(button);
+              }
+              if (typeof callback === "function") callback();
             });
-            const firstDay = new Date(thisYear, thisMonth, 1);
-            const lastDay = new Date(thisYear, thisMonth + 1, 0);
-            const firstWeekDay = (firstDay.getDay() + 6) % 7;
-            for (let i = 0; i < firstWeekDay; i++) {
-              monthWrapper.appendChild(document.createElement('div'));
+          }
+
+          function selectArea(area) {
+            document.querySelectorAll(".area-button").forEach((btn) => {
+              btn.classList.toggle("selected", btn.dataset.area === area);
+            });
+            if (area && areaRanges[area]) {
+              currentStart = areaRanges[area].start;
+              currentEnd = areaRanges[area].end;
+            } else {
+              currentStart = null;
+              currentEnd = null;
             }
-            for (let day = 1; day <= lastDay.getDate(); day++) {
-              const date = new Date(thisYear, thisMonth, day);
-              const cell = document.createElement('div');
-              cell.className = 'day';
-              cell.textContent = day;
-              if (currentStart && currentEnd && date >= currentStart && date <= currentEnd) {
-                cell.classList.add('in-range');
-              }
-              if (selectedDate && date.toDateString() === selectedDate.toDateString()) {
-                cell.classList.add('selected');
-              }
-              cell.addEventListener('click', () => {
-                selectedDate = date;
-                showInfo(date);
-                renderCalendar();
+            selectedDate = null;
+            renderCalendar();
+            infoBox.innerHTML = "<p>Please select a date</p>";
+          }
+
+          document.getElementById("prevMonth").addEventListener("click", () => {
+            viewMonth--;
+            if (viewMonth < 0) {
+              viewMonth = 11;
+              viewYear--;
+            }
+            renderCalendar();
+          });
+
+          document.getElementById("nextMonth").addEventListener("click", () => {
+            viewMonth++;
+            if (viewMonth > 11) {
+              viewMonth = 0;
+              viewYear++;
+            }
+            renderCalendar();
+          });
+
+          function renderCalendar() {
+            calendarEl.innerHTML = "";
+            const monthsToRender = 2;
+            const firstMonth = viewMonth;
+            const firstYear = viewYear;
+            const monthNames = [
+              "January",
+              "February",
+              "March",
+              "April",
+              "May",
+              "June",
+              "July",
+              "August",
+              "September",
+              "October",
+              "November",
+              "December",
+            ];
+            monthYearEl.textContent = `${
+              monthNames[firstMonth]
+            } ${firstYear} - ${monthNames[(firstMonth + 1) % 12]} ${
+              firstMonth === 11 ? firstYear + 1 : firstYear
+            }`;
+            for (let m = 0; m < monthsToRender; m++) {
+              const thisMonth = (firstMonth + m) % 12;
+              const thisYear = firstYear + Math.floor((firstMonth + m) / 12);
+              const monthWrapper = document.createElement("div");
+              monthWrapper.className = "month";
+              weekdays.forEach((day) => {
+                const cell = document.createElement("div");
+                cell.className = "weekday";
+                cell.textContent = day;
+                monthWrapper.appendChild(cell);
               });
-              monthWrapper.appendChild(cell);
+              const firstDay = new Date(thisYear, thisMonth, 1);
+              const lastDay = new Date(thisYear, thisMonth + 1, 0);
+              const firstWeekDay = (firstDay.getDay() + 6) % 7;
+              for (let i = 0; i < firstWeekDay; i++) {
+                monthWrapper.appendChild(document.createElement("div"));
+              }
+              for (let day = 1; day <= lastDay.getDate(); day++) {
+                const date = new Date(thisYear, thisMonth, day);
+                const cell = document.createElement("div");
+                cell.className = "day";
+                cell.textContent = day;
+                if (
+                  currentStart &&
+                  currentEnd &&
+                  date >= currentStart &&
+                  date <= currentEnd
+                ) {
+                  cell.classList.add("in-range");
+                }
+                if (
+                  selectedDate &&
+                  date.toDateString() === selectedDate.toDateString()
+                ) {
+                  cell.classList.add("selected");
+                }
+                if (currentStart && currentEnd) {
+                  if (date.toDateString() === currentStart.toDateString()) {
+                    cell.classList.add("range-start");
+                  }
+                  if (date.toDateString() === currentEnd.toDateString()) {
+                    cell.classList.add("range-end");
+                  }
+                  if (date >= currentStart && date <= currentEnd) {
+                    cell.classList.add("in-range");
+                  }
+                }
+                cell.addEventListener("click", () => {
+                  selectedDate = date;
+                  showInfo(date);
+                  renderCalendar();
+                });
+                monthWrapper.appendChild(cell);
+              }
+              calendarEl.appendChild(monthWrapper);
             }
-            calendarEl.appendChild(monthWrapper);
           }
-        }
 
-        function showInfo(date) {
-          if (!currentStart || !currentEnd) {
-            infoBox.innerHTML = '<p>Please select an area first</p>';
-            return;
+          function showInfo(date) {
+            const area = document.querySelector(".area-button.selected")
+              ?.dataset.area;
+            const areaData = areaRanges[area];
+            const inRange =
+              areaData && date >= areaData.start && date <= areaData.end;
+            const spaces = areaData ? areaData.spaces : 0;
+            const disabled = !inRange || spaces <= 0;
+
+            const day = date.toLocaleDateString("en-GB", { weekday: "long" });
+            const dayNum = date.getDate();
+            const suffix =
+              ["th", "st", "nd", "rd"][
+                dayNum % 100 > 10 && dayNum % 100 < 14 ? 0 : dayNum % 10
+              ] || "th";
+            const month = date.toLocaleDateString("en-GB", { month: "long" });
+            const year = date.getFullYear();
+
+            const dateLine = `${day} | ${dayNum}<sup>${suffix}</sup> ${month} | ${year}`;
+
+            infoBox.innerHTML = `
+            <div class="date-line">${dateLine}</div>
+            <div class="discount-banner ${inRange ? "active" : "inactive"}">
+              ${inRange ? "5%" : "0%"}
+              <small>${
+                inRange ? "Discount available" : "No discount available"
+              }</small>
+            </div>
+            <div class="allocation-line">Current allocation - ${
+              area?.charAt(0).toUpperCase() + area?.slice(1)
+            }: <strong>${spaces}</strong></div>
+            <input type="text" id="contractNo" class="input-box" placeholder=" Contract No:" ${
+              disabled ? "disabled" : ""
+            }>
+            <button class="claim-btn ${
+              disabled ? "disabled" : "enabled"
+            }" id="claimSpaceBtn" ${
+              disabled ? "disabled" : ""
+            }>Claim space</button>
+          `;
+
+            if (!disabled) {
+              document
+                .getElementById("claimSpaceBtn")
+                .addEventListener("click", () => {
+                  const contract = document
+                    .getElementById("contractNo")
+                    .value.trim();
+                  if (!contract) {
+                    alert("Please fill in the contract number.");
+                    return;
+                  }
+                  claimSpace(area, date, contract);
+                });
+            }
           }
-          const inRange = date >= currentStart && date <= currentEnd;
-          infoBox.innerHTML = `
-            <p><strong>Selected date:</strong><br>${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-            <p>Discount available:</p>
-            <div class="discount">${inRange ? '5%' : '0%'}</div>`;
-        }
 
-        fetchSheetData(() => renderCalendar());
+          function claimSpace(area, date, contract) {
+            if (areaRanges[area] && areaRanges[area].spaces > 0) {
+              areaRanges[area].spaces--;
+              alert(
+                `Space claimed\n\nDate: ${date.toLocaleDateString(
+                  "en-GB"
+                )}\nContract No: ${contract}`
+              );
+              showInfo(date);
+            }
+          }
+
+          fetchSheetData(() => renderCalendar());
+        });
       });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
