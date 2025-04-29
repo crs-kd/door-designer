@@ -431,8 +431,10 @@ body {
                 const button = document.createElement("button");
                 button.className = "area-button";
                 button.dataset.area = area;
-                button.textContent =
-                  area.charAt(0).toUpperCase() + area.slice(1);
+                button.textContent = area
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
                 button.addEventListener("click", () => selectArea(area));
                 areaSelect.appendChild(button);
               }
@@ -585,7 +587,10 @@ body {
               }</small>
             </div>
             <div class="allocation-line">Current allocation - ${
-              area?.charAt(0).toUpperCase() + area?.slice(1)
+              area
+              ?.split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
             }: <strong>${spaces}</strong></div>
             <input type="text" id="contractNo" class="input-box" placeholder=" Contract No:" ${
               disabled ? "disabled" : ""
