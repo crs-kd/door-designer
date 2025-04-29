@@ -12,298 +12,356 @@
       src="https://www.gstatic.com/charts/loader.js"
     ></script>
     <style>
-      :root {
-        --cr-navy: #0c2340;
-        --cr-orange: #f29300;
-        --cr-pink: #c9388a;
-        --cr-grey: #f5f5f7;
-        --text-light: #777;
-        --text-dark: #111;
-      }
-      body {
-        margin: 0;
-        font-family: "Montserrat", sans-serif;
-        background: #fbfdfe;
-        color: var(--text-dark);
-      }
-      .top-bar {
-        background: var(--cr-navy);
-        color: white;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 32px;
-      }
-      .top-bar img {
-        height: 32px;
-      }
-      .top-bar a {
-        font-size: 28px;
-        color: white;
-        text-decoration: none;
-      }
-      .container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 48px 24px;
-      }
-      .area-select {
-        display: flex;
-        gap: 24px;
-        margin-bottom: 40px;
-      }
-      .area-button {
-        background: none;
-        border: none;
-        font-size: 16px;
-        padding: 10px 12px 6px;
-        position: relative;
-        cursor: pointer;
-        color: #333;
-        font-weight: 500;
-        letter-spacing: 0.3px;
-      }
-      .area-button.selected::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 2px;
-        background: var(--cr-orange);
-      }
-      .calendar-wrapper {
-        display: flex;
-        gap: 48px;
-        align-items: flex-start;
-      }
-      .calendar-box {
-        background: white;
-        border-radius: 8px;
-        padding: 24px 32px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
-      }
-      .calendar-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-        font-weight: 300;
-        font-size: 16px;
-      }
-      .calendar-header button {
-        background: none;
-        border: none;
-        font-size: 22px;
-        color: #333;
-        cursor: pointer;
-      }
-      .calendar-grid {
-        display: flex;
-        gap: 32px;
-        text-align: center;
-      }
-      .month {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        grid-template-rows: repeat(
-          7,
-          1fr
-        ); /* <- 7 rows: 1 for weekdays + 6 for dates */
-        row-gap: 4px;
-        column-gap: 0px;
-        width: 100%;
-      }
-      .month:not(:last-child)::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        right: -16px;
-        width: 1px;
-        height: 100%;
-        background: #ddd;
-      }
-      .weekday {
-        font-size: 13px;
-        font-weight: 500;
-        color: #aaa;
-      }
-      .day {
-        width: 42px;
-        height: 42px;
-        line-height: 42px;
-        text-align: center;
-        font-size: 14px;
-        border-radius: 2px;
-        cursor: pointer;
-      }
+    :root {
+  --cr-navy: #0c2340;
+  --cr-orange: #f29300;
+  --cr-pink: #c9388a;
+  --cr-grey: #f5f5f7;
+  --text-light: #777;
+  --text-dark: #111;
+}
 
-      .day.in-range {
-        background: #e5e7eb;
-        border-radius: 0; /* Remove rounding for in-range middle days */
-      }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-      .day.range-start {
-        border-top-left-radius: 4px;
-        border-bottom-left-radius: 4px;
-      }
+body {
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  background: #fbfdfe;
+  color: var(--text-dark);
+}
 
-      .day.range-end {
-        border-top-right-radius: 4px;
-        border-bottom-right-radius: 4px;
-      }
-      .day.selected {
-        background: var(--cr-orange);
-        color: white;
-        font-weight: 600;
-      }
-      .info-box {
-        width: 320px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
-        padding: 32px 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        align-items: stretch;
-      }
-      .date-line {
-        color: var(--text-light);
-        font-size: 14px;
-        font-weight: 500;
-        text-align: center;
-      }
-      .discount-banner {
-        width: 100%;
-        padding: 26px 0;
-        border-radius: 10px;
-        text-align: center;
-        font-weight: 700;
-        font-size: 34px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-      }
-      .discount-banner.active {
-        background: transparent;
-        border: solid 1.3px var(--cr-pink);
-        color: var(--cr-pink);
-      }
-      .discount-banner.inactive {
-        background: transparent;
-        border: solid 2px #f0f0f0;
-        color: #aaa;
-      }
+.top-bar {
+  background: var(--cr-navy);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+}
 
-      .discount-banner.claimed {
-        background: var(--cr-pink);
-        color: white;
-        border: none;
-      }
-      .discount-banner small {
-        font-size: 15px;
-        font-weight: 500;
-        margin-top: 4px;
-      }
-      .allocation-line {
-        font-size: 15px;
-        text-align: center;
-        color: #555;
-      }
-      .allocation-line strong {
-        font-weight: 700;
-        color: #111;
-      }
-      .input-box {
-        padding: 10px 0px;
-        font-size: 15px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background: #f7f7f7;
-        width: 100%;
-      }
+.top-bar img {
+  height: 32px;
+}
 
-      .input-box::placeholder {
-        color: #aaa;
-        font-size: 12px;
-        font-weight: 500;
-        opacity: 1;
-      }
-      .claim-btn {
-        width: 100%;
-        padding: 14px;
-        font-size: 15px;
-        font-weight: 300;
-        border-radius: 4px;
-        border: none;
-        transition: background 0.3s ease;
-      }
-      .claim-btn.enabled {
-        background: var(--cr-navy);
-        color: white;
-        cursor: pointer;
-      }
-      .claim-btn.disabled {
-        background: #e5e7eb;
-        color: #aaa;
-        cursor: not-allowed;
-      }
+.top-bar a {
+  font-size: 28px;
+  color: white;
+  text-decoration: none;
+}
 
-      @media (max-width: 1024px) {
-        .calendar-wrapper {
-          flex-direction: column;
-          gap: 32px;
-          align-items: stretch;
-        }
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  gap: 20px;
+  max-width: 1200px; /* ✅ new */
+  width: 100%;
+  margin: 0 auto; /* ✅ centers it properly */
+}
+.area-select {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 40px;
+}
 
-        .calendar-box,
-        .info-box {
-          width: 100%;
-          padding: 20px;
-        }
+.area-button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  padding: 10px 12px 6px;
+  position: relative;
+  cursor: pointer;
+  color: #333;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
 
-        .calendar-header {
-          font-size: 18px;
-        }
+.area-button.selected::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--cr-orange);
+}
 
-        .day {
-          font-size: 13px;
-          height: 40px;
-        }
+.top-section {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 48px;
+  width: 100%;
+}
 
-        .discount-banner {
-          font-size: 30px;
-          padding: 24px 0;
-        }
+.calendar-box,
+.info-box {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px; /* same as calendar-box */
+  flex: 1; /* Important */
+}
 
-        .discount-banner small {
-          font-size: 14px;
-        }
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-weight: 300;
+  font-size: 16px;
+}
 
-        .input-box,
-        .claim-btn {
-          font-size: 14px;
-          padding: 12px;
-        }
+.calendar-header button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #333;
+  cursor: pointer;
+}
 
-        .top-bar {
-          flex-direction: column;
-          gap: 8px;
-          text-align: center;
-        }
+.calendar-grid {
+  display: flex;
+  gap: 32px;
+  text-align: center;
+}
 
-        .area-select {
-          flex-wrap: wrap;
-          justify-content: center;
-        }
+.month {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  row-gap: 4px;
+  column-gap: 0;
+  width: 100%;
+  position: relative;
+}
 
-        .container {
-          padding: 32px 16px;
-        }
-      }
+.month:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -16px;
+  width: 1px;
+  height: 100%;
+  background: #ddd;
+}
+
+.weekday {
+  font-size: 13px;
+  font-weight: 500;
+  color: #aaa;
+}
+
+.day {
+  width: 42px;
+  height: 42px;
+  line-height: 42px;
+  text-align: center;
+  font-size: 14px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.day.in-range {
+  background: #e5e7eb;
+  border-radius: 0;
+}
+
+.day.range-start {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.day.range-end {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.day.selected {
+  background: var(--cr-orange);
+  color: white;
+  font-weight: 600;
+}
+
+.info-box {
+  width: 320px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.date-line {
+  color: var(--text-light);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.discount-banner {
+  width: 100%;
+  padding: 26px 0;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.discount-banner.active {
+  background: transparent;
+  border: solid 1.3px var(--cr-pink);
+  color: var(--cr-pink);
+}
+
+.discount-banner.inactive {
+  background: transparent;
+  border: solid 2px #f0f0f0;
+  color: #aaa;
+}
+
+.discount-banner.claimed {
+  background: var(--cr-pink);
+  color: white;
+  border: none;
+}
+
+.discount-banner small {
+  font-size: 15px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.allocation-line {
+  font-size: 15px;
+  text-align: center;
+  color: #555;
+}
+
+.allocation-line strong {
+  font-weight: 700;
+  color: #111;
+}
+
+.input-box {
+  padding: 10px 0px;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f7f7f7;
+  width: 100%;
+}
+
+.input-box::placeholder {
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 1;
+}
+
+.claim-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 300;
+  border-radius: 4px;
+  border: none;
+  transition: background 0.3s ease;
+}
+
+.claim-btn.enabled {
+  background: var(--cr-navy);
+  color: white;
+  cursor: pointer;
+}
+
+.claim-btn.disabled {
+  background: #e5e7eb;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.dialog-box {
+  max-width: 100%;
+  background-color: #eef6ff;
+  border-left: 4px solid var(--cr-pink);
+  padding: 20px;
+  border-radius: 8px;
+  color: #1a2c56;
+  font-weight: 500;
+  font-family: "Montserrat", sans-serif;
+  align-self: stretch; /* ✅ make it fit nicely */
+}
+
+@media (max-width: 1024px) {
+  .top-bar {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .container {
+    padding: 32px 16px; /* Smaller padding for mobile */
+    max-width: 90%;      /* ✅ New: stop container stretching edge to edge */
+    margin: 0 auto;      /* ✅ Re-center */
+  }
+
+  .area-select {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .top-section {
+    flex-direction: column;
+    gap: 32px;
+    align-items: stretch;
+  }
+
+  .calendar-box,
+  .info-box {
+    width: 100%;
+    padding: 20px;
+    min-height: unset;
+  }
+
+  .calendar-header {
+    font-size: 18px;
+  }
+
+  .day {
+    font-size: 13px;
+    height: 40px;
+  }
+
+  .discount-banner {
+    font-size: 30px;
+    padding: 24px 0;
+  }
+
+  .discount-banner small {
+    font-size: 14px;
+  }
+
+  .input-box,
+  .claim-btn {
+    font-size: 14px;
+    padding: 12px;
+  }
+}
     </style>
   </head>
   <body>
@@ -315,9 +373,11 @@
       <div>Flexible Fit Additional Discount Portal</div>
       <a href="https://www.crsmith.co.uk/sales/">&times;</a>
     </div>
+    
     <div class="container">
       <div class="area-select" id="areaSelect"></div>
-      <div class="calendar-wrapper">
+    
+      <div class="top-section">
         <div class="calendar-box">
           <div class="calendar-header">
             <button id="prevMonth">&#8592;</button>
@@ -326,11 +386,17 @@
           </div>
           <div class="calendar-grid" id="calendar"></div>
         </div>
+    
         <div class="info-box" id="infoBox">
           <p>Please select a date</p>
         </div>
       </div>
+    
+      <div class="dialog-box">
+        Reminder: Customers who claim a flexible fit space are eligible for the upgraded 6 years interest-free credit option.
+      </div>
     </div>
+
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         google.charts.load("current", { packages: ["corechart"] });
