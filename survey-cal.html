@@ -15,6 +15,7 @@
       :root {
         --cr-navy: #0c2340;
         --cr-orange: #f29300;
+        --cr-pink: #c9388a;
         --cr-grey: #f5f5f7;
         --text-light: #777;
         --text-dark: #111;
@@ -188,13 +189,19 @@
       }
       .discount-banner.active {
         background: transparent;
-        border: solid 1.3px #c9388a;
-        color: #c9388a;
+        border: solid 1.3px var(--cr-pink);
+        color: var(--cr-pink);
       }
       .discount-banner.inactive {
         background: transparent;
         border: solid 2px #f0f0f0;
         color: #aaa;
+      }
+
+      .discount-banner.claimed {
+        background: var(--cr-pink);
+        color: white;
+        border: none;
       }
       .discount-banner small {
         font-size: 15px;
@@ -542,13 +549,36 @@
 
           function claimSpace(area, date, contract) {
             if (areaRanges[area] && areaRanges[area].spaces > 0) {
-              areaRanges[area].spaces--;
-              alert(
-                `Space claimed\n\nDate: ${date.toLocaleDateString(
-                  "en-GB"
-                )}\nContract No: ${contract}`
+              areaRanges[area].spaces--; // Reduce the allocation by 1
+
+              // Update the discount banner
+              const discountBanner = infoBox.querySelector(".discount-banner");
+              if (discountBanner) {
+                discountBanner.classList.remove("active", "inactive");
+                discountBanner.classList.add("claimed");
+                discountBanner.innerHTML = `Claimed! <small>Thank you</small>`;
+              }
+
+              // Disable the claim button and input
+              const claimButton = document.getElementById("claimSpaceBtn");
+              const contractInput = document.getElementById("contractNo");
+              if (claimButton) {
+                claimButton.classList.remove("enabled");
+                claimButton.classList.add("disabled");
+                claimButton.disabled = true;
+                claimButton.textContent = "Claimed";
+              }
+              if (contractInput) {
+                contractInput.disabled = true;
+              }
+
+              // Update the allocation line with the new spaces value
+              const allocationLine = infoBox.querySelector(
+                ".allocation-line strong"
               );
-              showInfo(date);
+              if (allocationLine) {
+                allocationLine.textContent = areaRanges[area].spaces;
+              }
             }
           }
 
