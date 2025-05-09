@@ -31,7 +31,7 @@ export async function createBasePanel({
   if (woodTextureURL) {
     const woodImg = await loadImage(woodTextureURL);
     if (woodImg) {
-      ctx.globalCompositeOperation = "multiply";
+      ctx.globalCompositeOperation = "overlay";
       ctx.drawImage(woodImg, 0, 0, width, height);
       ctx.globalCompositeOperation = "source-over";
     }

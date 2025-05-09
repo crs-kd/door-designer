@@ -22,7 +22,7 @@ export async function composeElementGroup({
   height,
   baseColor = "#ccc",
   textureURL = null,
-  textureBlend = "multiply",
+  textureBlend = "overlay",
   elements = [],
   mask = null,
 }) {
@@ -84,7 +84,7 @@ export async function composeElementGroup({
   const compositedCtx = composited.getContext("2d");
 
   compositedCtx.drawImage(baseCanvas, 0, 0);
-  compositedCtx.globalCompositeOperation = "multiply";
+  compositedCtx.globalCompositeOperation = "overlay";
   compositedCtx.drawImage(overlayCanvas, 0, 0);
   compositedCtx.globalCompositeOperation = "source-over";
 

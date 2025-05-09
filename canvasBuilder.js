@@ -70,31 +70,6 @@ async function drawPanelElement(ctx, rect, options) {
   ctx.restore();
 }
 
-function getElementPosition(id, panelWidth, panelHeight, width, height) {
-  // Default: center element
-  let x = (panelWidth - width) / 2;
-  let y = (panelHeight - height) / 2;
-
-  // Lock handle to bottom-left or bottom-right
-  if (id.includes('handle')) {
-    x = id.includes('right') ? panelWidth - width - 40 : 40;  // 40px offset from edge
-    y = panelHeight - height - 100; // 100px from bottom
-  }
-
-  // Lock letterplate to horizontal center and fixed height from bottom
-  if (id.includes('letterplate')) {
-    x = (panelWidth - width) / 2;
-    y = panelHeight - height - 400; // 400px from bottom
-  }
-
-  // Glazing or molding: center using factor if available
-  if (id.includes('glazing') || id.includes('molding')) {
-    // Already centered by default
-  }
-
-  return { x, y };
-}
-
 /*
    ---------------------------------------------
    Build the Door Panel
@@ -119,32 +94,97 @@ async function buildPanelComposite(panelWidth, panelHeight, finish) {
   });
   const finalCtx = finalCanvas.getContext("2d");
 
+    // lighting overlay
+    const lightingOverlayConfig = {
+      visible: true,
+      xFactor: 0,
+      yFactor: 0,
+      widthFactor: 1,
+      heightFactor: 0.8
+      ,
+      blend: "overlay",
+    };
+    
+    if (lightingOverlayConfig.visible) {
+      const ovX = lightingOverlayConfig.xFactor * panelWidth;
+      const ovY = lightingOverlayConfig.yFactor * panelHeight;
+      const ovW = lightingOverlayConfig.widthFactor * panelWidth;
+      const ovH = lightingOverlayConfig.heightFactor * panelHeight;
+    
+      const gradient = finalCtx.createLinearGradient(ovX, ovY, ovX, ovY + ovH);
+      gradient.addColorStop(0, "rgba(208, 208, 208, 0.15)"); // Top (brighter)
+      gradient.addColorStop(1, "rgba(255, 255, 255, 0)");   // Bottom (transparent)
+    
+      finalCtx.globalCompositeOperation = lightingOverlayConfig.blend;
+      finalCtx.fillStyle = gradient;
+      finalCtx.fillRect(ovX, ovY, ovW, ovH);
+      finalCtx.globalCompositeOperation = "source-over";
+    }
+    
+  
+  // Glossy panel overlay
+    const metalOverlayConfig = {
+      visible: true,
+      xFactor: 0.13,
+      yFactor: 0.96,
+      widthFactor: 1,
+      height: 5,
+      fillStyle: "rgba(255, 255, 255, 0.35)",
+      blend: "overlay",
+    };
+  
+    if (metalOverlayConfig.visible) {
+      const ovX = metalOverlayConfig.xFactor * panelWidth;
+      const ovY = metalOverlayConfig.yFactor * panelHeight;
+      const ovW = metalOverlayConfig.widthFactor * panelWidth;
+      const ovH = metalOverlayConfig.height;
+      finalCtx.globalCompositeOperation = metalOverlayConfig.blend;
+      finalCtx.fillStyle = metalOverlayConfig.fillStyle;
+      finalCtx.fillRect(ovX, ovY, ovW, ovH);
+      finalCtx.globalCompositeOperation = "source-over";
+    }
+
   // Step 2: Frame
   const frameElements = JSON.parse(JSON.stringify([
     {
       id: "top-frame",
       mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
-      options: { imageURL: getImageURL("frame-top") },
+      options: { imageURL: getImageURL("frame-x") },
+    },
+    {
+      id: "bottom-frame",
+      mixedRect: { y: "bottom", height: 17, xFactor: 0, widthFactor: 1 },
+      options: { imageURL: getImageURL("frame-x") },
     },
     {
       id: "left-vertical-frame",
       mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL("frame") },
+      options: { imageURL: getImageURL("frame-y") },
     },
     {
       id: "right-vertical-frame",
       mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL("frame"), flipHorizontal: true },
+      options: { imageURL: getImageURL("frame-y"),flipHorizontal: true },
     },
     {
       id: "top-left-corner",
       rect: { x: 0, y: 0, width: 35, height: 35 },
-      options: { imageURL: getImageURL("corner") },
+      options: { imageURL: getImageURL("frame-corner") },
     },
     {
       id: "top-right-corner",
       rect: { x: "right", y: 0, width: 35, height: 35 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: true },
+      options: { imageURL: getImageURL("frame-corner"),flipHorizontal: true},
+    },
+    {
+      id: "bottom-right-corner",
+      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      options: { imageURL: getImageURL("frame-y"), flipVertical:true,flipHorizontal: true },
+    },
+    {
+      id: "bottom-left-corner",
+      rect: { x:0, y: "bottom", width: 35, height: 35 },
+      options: { imageURL: getImageURL("frame-y"), flipVertical: true},
     },
   ]));
 
@@ -152,7 +192,7 @@ async function buildPanelComposite(panelWidth, panelHeight, finish) {
   const frameCanvas = await composeElementGroup({
     width: panelWidth,
     height: panelHeight,
-    baseColor: finish.color, // Future: replace with configurable frame color
+    baseColor: finish.color,
     textureURL: finish.texture,
     elements: frameElements,
     mask: frameMask,
@@ -160,187 +200,219 @@ async function buildPanelComposite(panelWidth, panelHeight, finish) {
   finalCtx.drawImage(frameCanvas, 0, 0);
   finalCtx.globalCompositeOperation = "source-over";
 
-  // Step 3: Molding
-const moldingDef = styleObj?.styleAssets?.molding
-? moldingDefs.find(m => m.id === styleObj.styleAssets.molding)
-: null;
-
-let moldingElements = [];
-
-if (moldingDef?.repeat && moldingDef?.cell?.elements) {
-const { rows, cols, gapX = 0, gapY = 0 } = moldingDef.repeat;
-const { width: cellW, height: cellH, elements: cellElements } = moldingDef.cell;
-
-const totalGridWidth = cols * cellW + (cols - 1) * gapX;
-const totalGridHeight = rows * cellH + (rows - 1) * gapY;
-
-const gridOffsetX = (moldingDef.width - totalGridWidth) / 2;
-const gridOffsetY = (moldingDef.height - totalGridHeight) / 2;
-
-for (let row = 0; row < rows; row++) {
-  for (let col = 0; col < cols; col++) {
-    const cellOffsetX = gridOffsetX + col * (cellW + gapX);
-    const cellOffsetY = gridOffsetY + row * (cellH + gapY);
-
-    for (const el of cellElements) {
-      const cloned = JSON.parse(JSON.stringify(el));
-
-      if (cloned.rect) {
-        const r = cloned.rect;
-        const w = r.width === "full" ? cellW : r.width;
-        const x = r.x === "right" ? cellW - w : r.x ?? 0;
-        const y = r.y === "bottom" ? cellH - r.height : r.y ?? 0;
-
-        cloned.rect = {
-          x: cellOffsetX + x,
-          y: cellOffsetY + y,
-          width: w,
-          height: r.height,
-        };
-      } else if (cloned.mixedRect) {
-        const m = cloned.mixedRect;
-        cloned.rect = {
-          x: cellOffsetX + (
-            m.x !== undefined
-              ? (m.x === "right" ? cellW - m.width : m.x)
-              : (m.xFactor ?? 0) * cellW
-          ),
-          y: cellOffsetY + (
-            m.y !== undefined
-              ? (m.y === "bottom" ? cellH - m.height : m.y)
-              : (m.yFactor ?? 0) * cellH
-          ),
-          width: m.width ?? (m.widthFactor * cellW),
-          height: m.height ?? (m.heightFactor * cellH),
-        };
-      }
-
-      moldingElements.push(cloned);
-    }
-  }
-}
-} else if (moldingDef?.elements) {
-moldingElements = JSON.parse(JSON.stringify(moldingDef.elements));
-}
-
-if (moldingElements.length > 0) {
-const moldW = moldingDef.width;
-const moldH = moldingDef.height;
-
-const moldingCanvas = await composeElementGroup({
-  width: moldW,
-  height: moldH,
-  baseColor: finish.color, // For visibility during development
-  textureURL: finish.texture,
-  elements: moldingElements,
-  mask: buildMoldingMask({ elements: moldingElements }, moldW, moldH),
-});
-
-// Correct alignment logic
-const moldX =
-  moldingDef.align === "left"
-    ? 0 + (moldingDef.offsetX ?? 0)
-    : moldingDef.align === "right"
-    ? panelWidth - moldW + (moldingDef.offsetX ?? 0)
-    : (panelWidth - moldW) / 2 + (moldingDef.offsetX ?? 0);
-
-const moldY = panelHeight - moldH - (moldingDef.offsetY ?? 0);
-
-finalCtx.drawImage(moldingCanvas, moldX, moldY);
-finalCtx.globalCompositeOperation = "source-over";
-}
-
-  
-  // Step 4: Glazing
+// Step 3: Glazing
 if (state.selectedGlazing && state.selectedGlazing !== "none") {
   const glazeDef = glazingDefs.find(g => g.id === state.selectedGlazing);
-  if (glazeDef) {
-    const override = glazeDef.styleOverrides?.[state.selectedStyle] || {};
-    const width = override.width ?? glazeDef.width;
-    const height = override.height ?? glazeDef.height;
-    const offsetY = override.offsetY ?? glazeDef.offsetY ?? 0;
-    const offsetX = override.offsetX ?? glazeDef.offsetX ?? 0;
-    const align = override.align ?? glazeDef.align ?? "center";
+  const layout = styleObj?.glazingLayout;
+
+  if (glazeDef && layout) {
+    const scaleFactor = panelHeight / (state.inputMM?.height || 1980);
+
+    const marginX = Math.round((layout.marginX ?? 0) * scaleFactor);
+    const marginY = Math.round((layout.marginY ?? 0) * scaleFactor);
+    const width = Math.round((layout.width ?? panelWidth - 2 * marginX / scaleFactor) * scaleFactor);
+    const height = Math.round((layout.height ?? panelHeight - 2 * marginY / scaleFactor) * scaleFactor);
+    const offsetX = Math.round((layout.offsetX ?? 0) * scaleFactor);
+    const offsetY = Math.round((layout.offsetY ?? 0) * scaleFactor);
+    const align = layout.align ?? "center";
+    const verticalAlign = layout.verticalAlign ?? "top";
+
+    const modifierList = [];
+    if (layout.imageModifier) modifierList.push(layout.imageModifier);
+    if (state.glazingObscureEnabled) modifierList.push("obscure");
+
+    const baseName = glazeDef.image?.toLowerCase().replace(/\.png$/, "");
+    const imgKey = [baseName, ...modifierList].join("-");
+
+    const sharedImg = await loadImage(getImageURL(imgKey)).catch(() =>
+      loadImage(getImageURL(baseName))
+    );
 
     const glazeCanvas = document.createElement("canvas");
     glazeCanvas.width = width;
     glazeCanvas.height = height;
     const glazeCtx = glazeCanvas.getContext("2d");
 
-    const drawElements = async (ctx, elements, w, h, ox = 0, oy = 0) => {
-      for (const el of elements) {
-        let rect;
-        const img = await loadImage(el.options.imageURL);
-        if (!img) continue;
+    if (sharedImg && layout.elements?.length) {
+      for (const el of layout.elements) {
+        const r = el.rect;
+        const elW = r.width === "full" ? width : Math.round(r.width * scaleFactor);
+        const elH = r.height === "full" ? height : Math.round(r.height * scaleFactor);
+        const elX = r.x === "right"
+          ? width - elW
+          : r.x === "centre"
+          ? (width - elW) / 2
+          : Math.round((r.x ?? 0) * scaleFactor);
+        const elY = r.y === "bottom"
+          ? height - elH
+          : r.y === "centre"
+          ? (height - elH) / 2
+          : Math.round((r.y ?? 0) * scaleFactor);
 
-        if (el.rect) {
-          const r = el.rect;
-          const rw = r.width === "full" ? w : r.width;
-          const rx = ox + (r.x === "right" ? w - rw : r.x ?? 0);
-          const ry = oy + (
-            r.align === "centerY"
-              ? (h - r.height) / 2
-              : r.y === "bottom"
-              ? h - r.height
-              : r.y ?? 0
-          );
-          rect = { x: rx, y: ry, width: rw, height: r.height };
-        } else if (el.mixedRect) {
-          const m = el.mixedRect;
-          rect = {
-            x: ox + (m.x !== undefined ? (m.x === "right" ? w - m.width : m.x) : (m.xFactor ?? 0) * w),
-            y: oy + (m.y !== undefined ? (m.y === "bottom" ? h - m.height : m.y) : (m.yFactor ?? 0) * h),
-            width: m.width ?? m.widthFactor * w,
-            height: m.height ?? m.heightFactor * h,
-          };
-        } else continue;
-
-        ctx.save();
-        ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
-        if (el.options.rotation) ctx.rotate((el.options.rotation * Math.PI) / 180);
-        const scaleX = el.options.flipHorizontal ? -1 : 1;
-        const scaleY = el.options.flipVertical ? -1 : 1;
-        ctx.scale(scaleX, scaleY);
-        ctx.drawImage(img, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
-        ctx.restore();
-      }
-    };
-
-    if (override.repeat && override.cell?.elements) {
-      const { rows, cols, gapX = 0, gapY = 0 } = override.repeat;
-      const cellW = override.cell.width;
-      const cellH = override.cell.height;
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const ox = col * (cellW + gapX);
-          const oy = row * (cellH + gapY);
-          await drawElements(glazeCtx, override.cell.elements, cellW, cellH, ox, oy);
+        glazeCtx.save();
+        glazeCtx.translate(elX + elW / 2, elY + elH / 2);
+        if (el.options?.rotation) {
+          glazeCtx.rotate((el.options.rotation * Math.PI) / 180);
         }
+        const scaleX = el.options?.flipHorizontal ? -1 : 1;
+        const scaleY = el.options?.flipVertical ? -1 : 1;
+        glazeCtx.scale(scaleX, scaleY);
+        glazeCtx.drawImage(sharedImg, -elW / 2, -elH / 2, elW, elH);
+        glazeCtx.restore();
       }
-    } else {
-      let imgKey = override.image ?? glazeDef.image;
-      if (state.glazingObscureEnabled) {
-        imgKey = state.currentView === "internal"
-          ? override.obscureInternal ?? glazeDef.obscureInternal ?? imgKey
-          : override.obscureExternal ?? glazeDef.obscureExternal ?? imgKey;
-      }
-
-      const img = await loadImage(getImageURL(imgKey));
-      if (img) {
-        glazeCtx.drawImage(img, 0, 0, width, height);
-      }
+    } else if (sharedImg) {
+      glazeCtx.drawImage(sharedImg, 0, 0, width, height);
     }
 
     const glazeX =
       align === "left"
-        ? 40 + offsetX
+        ? marginX + offsetX
         : align === "right"
-        ? panelWidth - width - 40 + offsetX
+        ? panelWidth - marginX - width + offsetX
         : (panelWidth - width) / 2 + offsetX;
-    const glazeY = panelHeight - height - offsetY;
+
+    const glazeY =
+      verticalAlign === "bottom"
+        ? panelHeight - height - marginY - offsetY
+        : verticalAlign === "centre"
+        ? (panelHeight - height) / 2 + offsetY
+        : marginY + offsetY;
 
     finalCtx.drawImage(glazeCanvas, glazeX, glazeY);
   }
+}
+
+
+// Step 4: Molding
+const moldingDef = styleObj?.styleAssets?.molding
+  ? moldingDefs.find(m => m.id === styleObj.styleAssets.molding)
+  : null;
+
+let moldingElements = [];
+
+const scaleFactor = panelHeight / (state.inputMM?.height || 1980);
+const moldW = moldingDef?.width ? Math.round(moldingDef.width * scaleFactor) : panelWidth;
+const moldH = moldingDef?.height ? Math.round(moldingDef.height * scaleFactor) : panelHeight;
+
+const offsetX = moldingDef?.offsetX !== undefined ? Math.round(moldingDef.offsetX * scaleFactor) : 0;
+const offsetY = moldingDef?.offsetY !== undefined ? Math.round(moldingDef.offsetY * scaleFactor) : 0;
+
+if (moldingDef?.repeat && moldingDef?.cell?.elements) {
+  const { rows, cols, gapX = 0, gapY = 0 } = moldingDef.repeat;
+  const cellW = Math.round(moldingDef.cell.width * scaleFactor);
+  const cellH = Math.round(moldingDef.cell.height * scaleFactor);
+  const cellElements = moldingDef.cell.elements;
+
+  const totalGridWidth = cols * cellW + (cols - 1) * gapX;
+  const totalGridHeight = rows * cellH + (rows - 1) * gapY;
+
+  const gridOffsetX = (moldW - totalGridWidth) / 2;
+  const gridOffsetY = (moldH - totalGridHeight) / 2;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const cellOffsetX = gridOffsetX + col * (cellW + gapX);
+      const cellOffsetY = gridOffsetY + row * (cellH + gapY);
+
+      for (const el of cellElements) {
+        const cloned = JSON.parse(JSON.stringify(el));
+        const r = cloned.rect ?? {};
+
+        const w = r.width !== undefined
+          ? (r.width === "full" ? cellW : Math.round(r.width * scaleFactor))
+          : (r.widthFactor ?? 0) * cellW;
+
+        const h = r.height !== undefined
+          ? Math.round(r.height * scaleFactor)
+          : (r.heightFactor ?? 0) * cellH;
+
+        const x = r.x === "right"
+          ? cellW - w
+          : r.x === "centre"
+          ? (cellW - w) / 2
+          : r.x !== undefined
+          ? Math.round(r.x * scaleFactor)
+          : (r.xFactor ?? 0) * cellW;
+
+        const y = r.y === "bottom"
+          ? cellH - h
+          : r.y === "centre"
+          ? (cellH - h) / 2
+          : r.y !== undefined
+          ? Math.round(r.y * scaleFactor)
+          : (r.yFactor ?? 0) * cellH;
+
+        cloned.rect = { x: cellOffsetX + x, y: cellOffsetY + y, width: w, height: h };
+        delete cloned.mixedRect;
+
+        moldingElements.push(cloned);
+      }
+    }
+  }
+} else if (moldingDef?.elements) {
+  moldingElements = JSON.parse(JSON.stringify(moldingDef.elements));
+
+  for (const el of moldingElements) {
+    const r = el.rect ?? {};
+
+    const w = r.width !== undefined
+      ? (r.width === "full" ? moldW : Math.round(r.width * scaleFactor))
+      : (r.widthFactor ?? 0) * moldW;
+
+    const h = r.height !== undefined
+      ? Math.round(r.height * scaleFactor)
+      : (r.heightFactor ?? 0) * moldH;
+
+    const x = r.x === "right"
+      ? moldW - w
+      : r.x === "centre"
+      ? (moldW - w) / 2
+      : r.x !== undefined
+      ? Math.round(r.x * scaleFactor)
+      : (r.xFactor ?? 0) * moldW;
+
+    const y = r.y === "bottom"
+      ? moldH - h
+      : r.y === "centre"
+      ? (moldH - h) / 2
+      : r.y !== undefined
+      ? Math.round(r.y * scaleFactor)
+      : (r.yFactor ?? 0) * moldH;
+
+    el.rect = { x, y, width: w, height: h };
+    delete el.mixedRect;
+  }
+}
+
+if (moldingElements.length > 0) {
+  const moldingCanvas = await composeElementGroup({
+    width: moldW,
+    height: moldH,
+    baseColor: finish.color,
+    textureURL: finish.texture,
+    elements: moldingElements,
+    mask: moldingDef.mask === false ? null : buildMoldingMask({ elements: moldingElements }, moldW, moldH),
+  });
+
+  const align = moldingDef.align ?? "center";
+  const verticalAlign = moldingDef.verticalAlign ?? "bottom";
+
+  const moldX =
+    align === "left"
+      ? offsetX
+      : align === "right"
+      ? panelWidth - moldW + offsetX
+      : (panelWidth - moldW) / 2 + offsetX;
+
+  const moldY =
+    verticalAlign === "top"
+      ? offsetY
+      : verticalAlign === "centre"
+      ? (panelHeight - moldH) / 2 + offsetY
+      : panelHeight - moldH - offsetY;
+
+  finalCtx.drawImage(moldingCanvas, moldX, moldY);
+  finalCtx.globalCompositeOperation = "source-over";
 }
 
 // Step 6: Handle
@@ -408,7 +480,7 @@ if (state.selectedHandle && state.selectedHandle !== "none") {
           finalCtx.drawImage(tintedHinge, hingeX, y, hW, hH);
 
           // 2. Multiply original hinge on top
-          finalCtx.globalCompositeOperation = "multiply";
+          finalCtx.globalCompositeOperation = "overlay";
           finalCtx.drawImage(hingeImg, hingeX, y, hW, hH);
           finalCtx.globalCompositeOperation = "source-over";
         }
@@ -469,51 +541,6 @@ if (state.selectedLetterplate && state.selectedLetterplate !== "none") {
     finalCtx.globalCompositeOperation = "source-over";
   }
 
-  // Glossy panel overlay
-  const panelOverlayConfig = {
-    visible: true,
-    xFactor: 0.13,
-    yFactor: 0.96,
-    widthFactor: 0.74,
-    height: 5,
-    fillStyle: "rgba(255, 255, 255, 0.35)",
-    blend: "overlay",
-  };
-
-  if (panelOverlayConfig.visible) {
-    const ovX = panelOverlayConfig.xFactor * panelWidth;
-    const ovY = panelOverlayConfig.yFactor * panelHeight;
-    const ovW = panelOverlayConfig.widthFactor * panelWidth;
-    const ovH = panelOverlayConfig.height;
-    finalCtx.globalCompositeOperation = panelOverlayConfig.blend;
-    finalCtx.fillStyle = panelOverlayConfig.fillStyle;
-    finalCtx.fillRect(ovX, ovY, ovW, ovH);
-    finalCtx.globalCompositeOperation = "source-over";
-  }
-
-  // lighting overlay
-  const lightingOverlayConfig = {
-    visible: true,
-    xFactor: 0,
-    yFactor: 0,
-    widthFactor: 1,
-    height: 300,
-    fillStyle: "rgba(255, 255, 255, 0)",
-    blend: "overlay",
-  };
-
-  if (lightingOverlayConfig.visible) {
-    const ovX = lightingOverlayConfig.xFactor * panelWidth;
-    const ovY = lightingOverlayConfig.yFactor * panelHeight;
-    const ovW = lightingOverlayConfig.widthFactor * panelWidth;
-    const ovH = lightingOverlayConfig.height;
-    finalCtx.globalCompositeOperation = lightingOverlayConfig.blend;
-    finalCtx.fillStyle = lightingOverlayConfig.fillStyle;
-    finalCtx.fillRect(ovX, ovY, ovW, ovH);
-    finalCtx.globalCompositeOperation = "source-over";
-  }
-
-
   return finalCanvas;
 }
 
@@ -566,47 +593,74 @@ if (grooveDef && grooveDef.image) {
   }
 }
 
+  // lighting overlay
+  const lightingOverlayConfig = {
+    visible: true,
+    xFactor: 0,
+    yFactor: 0,
+    widthFactor: 1,
+    heightFactor: 0.5,
+    blend: "overlay",
+  };
+  
+  if (lightingOverlayConfig.visible) {
+    const ovX = lightingOverlayConfig.xFactor * targetWidth;
+    const ovY = lightingOverlayConfig.yFactor * targetHeight;
+    const ovW = lightingOverlayConfig.widthFactor * targetWidth;
+    const ovH = lightingOverlayConfig.heightFactor * targetHeight;
+  
+    const gradient = finalCtx.createLinearGradient(ovX, ovY, ovX, ovY + ovH);
+    gradient.addColorStop(0, "rgba(255, 255, 255, 0.15)"); // Top (brighter)
+    gradient.addColorStop(1, "rgba(255, 255, 255, 0)");   // Bottom (transparent)
+  
+    finalCtx.globalCompositeOperation = lightingOverlayConfig.blend;
+    finalCtx.fillStyle = gradient;
+    finalCtx.fillRect(ovX, ovY, ovW, ovH);
+    finalCtx.globalCompositeOperation = "source-over";
+  }
+  
+
   // Step 4: Frame
   const frameElements = [
     {
       id: "top-frame",
       mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
-      options: { imageURL: getImageURL("frame-top") },
+      options: { imageURL: getImageURL("frame-x") },
     },
     {
       id: "bottom-frame",
       mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 },
-      options: { imageURL: getImageURL("frame-top"), flipVertical: true },
+      options: { imageURL: getImageURL("frame-x"), flipVertical: true },
     },
     {
       id: "left-frame",
       mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL("frame") },
+      options: { imageURL: getImageURL("frame-y")},
     },
     {
       id: "right-frame",
       mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL("frame"), flipHorizontal: true },
+      options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
     },
     {
       id: "top-left",
       rect: { x: 0, y: 0, width: 35, height: 35 },
-      options: { imageURL: getImageURL("corner") },
+      options: { imageURL: getImageURL("frame-corner") },
     },
     {
       id: "top-right",
       rect: { x: "right", y: 0, width: 35, height: 35 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: true },
+      options: { imageURL: getImageURL("frame-corner"), flipHorizontal: true  },
     },
     {
       id: "bottom-left",
       rect: { x: 0, y: "bottom", width: 35, height: 35 },
-      options: { imageURL: getImageURL("corner"), flipVertical: true },
+      options: { imageURL: getImageURL("frame-corner"), flipVertical: true },
     },
     {
       id: "bottom-right",
       rect: { x: "right", y: "bottom", width: 35, height: 35 },
-      options: { imageURL: getImageURL("corner"), flipHorizontal: true, flipVertical: true },
+      options: { imageURL: getImageURL("frame-corner"),flipVertical: true , flipHorizontal: true },
     },
   ];
 
@@ -759,12 +813,8 @@ if (Array.isArray(sidescreenStyle?.midFrameElements)) {
         mask: buildMoldingMask({ elements: moldingElements }, moldW, moldH)
       });
 
-      const moldX =
-        moldingDef.align === "left"
-          ? 0 + (moldingDef.offsetX ?? 0)
-          : moldingDef.align === "right"
-          ? targetWidth - moldW + (moldingDef.offsetX ?? 0)
-          : (targetWidth - moldW) / 2 + (moldingDef.offsetX ?? 0);
+      const moldX = (targetWidth - moldW) / 2;
+
 
       const moldY = targetHeight - moldH - (moldingDef.offsetY ?? 0);
 
