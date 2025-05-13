@@ -47,20 +47,19 @@ function updateStepMenu(idx) {
 }
 
 function goToNextStep() {
-  if (currentStep < stepIDs.length - 1) {
-    currentStep++;
-    showStep(currentStep);
+  if (state.currentStep < stepIDs.length - 1) {
+    state.currentStep++;
+    showStep(state.currentStep);
     updateNavigationControls();
   }
 }
 
 function goToPreviousStep() {
-  if (currentStep > 0) {
-    currentStep--;
-    showStep(currentStep);
+  if (state.currentStep > 0) {
+    state.currentStep--;
+    showStep(state.currentStep);
     updateNavigationControls();
   } else {
-    // This is the fix: go back to start screen
     document.getElementById("startScreen").classList.remove("hidden");
     document.querySelector(".door-designer-container").style.display = "none";
   }
@@ -78,3 +77,4 @@ document.getElementById("doorWidthInput").addEventListener("change", updateCanva
 document.getElementById("doorHeightInput").addEventListener("change", updateCanvasPreview);
 document.getElementById("leftSidescreenWidthInput").addEventListener("change", updateCanvasPreview);
 document.getElementById("rightSidescreenWidthInput").addEventListener("change", updateCanvasPreview);
+document.getElementById("fanLightHeightInput")?.addEventListener("change", updateCanvasPreview);

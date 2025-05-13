@@ -132,51 +132,56 @@
 
       .style-size-info {
         margin-left: 15px;
-  font-size: 15px;
-  line-height: 1.6;
-  margin-bottom: 16px;
-}
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 16px;
+      }
 
-.style-size-info strong {
-  font-size: 17px;
-  display: block;
-  margin-bottom: 6px;
-}
+      .style-size-info strong {
+        font-size: 17px;
+        display: block;
+        margin-bottom: 6px;
+      }
 
-.style-size-info .row {
-  display: flex;
-  justify-content: left;
-  max-width: 280px;
-}
+      .style-size-info .row {
+        display: flex;
+        justify-content: left;
+        max-width: 280px;
+      }
 
-.style-size-info .label {
-  min-width: 80px;
-}
+      .style-size-info .label {
+        min-width: 80px;
+      }
 
-.style-size-info .value-pair {
-  display: flex;
-  gap: 16px;
-}
+      .style-size-info .value-pair {
+        display: flex;
+        gap: 16px;
+      }
 
-.style-size-info .value-pair span {
-  font-weight: bold;
-}
+      .style-size-info .value-pair span {
+        font-weight: bold;
+      }
 
       .panel-size-inputs {
         display: flex;
-        justify-content: space-between;
-        text-align: center;
+        gap: 10px; /* Better than margin-right for consistent spacing */
         padding: 10px 20px;
-        border-top: 1px solid #ccc;
+      }
+
+      .panel-size-inputs .size-input {
+        flex: 1; /* Equal width for both */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
       .panel-size-inputs input {
         text-align: center;
-        width: 50%;
         padding: 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 0.9rem;
-        margin-right: 10px;
+        width: 100%; /* ✅ Fill parent container */
+        box-sizing: border-box;
       }
       .panel-size-inputs label {
         font-size: 0.7rem;
@@ -364,8 +369,30 @@
         font-size: 0.75rem;
         color: #041244;
       }
+      .style-size-table {
+        padding: 15px;
+        width: 100%;
+        box-sizing: border-box;
+      }
 
-      
+      .style-size-table table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+        color: #041244;
+      }
+
+      .style-size-table th,
+      .style-size-table td {
+        padding: 8px 12px;
+        text-align: left;
+      }
+
+      .style-size-table th {
+        font-size: 17px;
+        text-align: center;
+        color: #041244;
+      }
 
       /* -------------------------------------------------
          Visualiser Mode (Unchanged)
@@ -451,12 +478,9 @@
           />
         </div>
         <div class="step-menu">
-          <!-- Removed the Range option; steps now start with Configuration -->
-          <span data-index="0" class="step-menu-item active"
-            >Configuration</span
-          >
-          <span data-index="1" class="step-menu-item">Style</span>
-          <span data-index="2" class="step-menu-item">Sidescreen</span>
+          <span data-index="0" class="step-menu-item">Configuration</span>
+          <span data-index="1"class="step-menu-item hidden" id="sidescreenMenuItem">Sidescreen</span>
+          <span data-index="2" class="step-menu-item">Style</span>
           <span data-index="3" class="step-menu-item">Finish</span>
           <span data-index="4" class="step-menu-item">Glazing</span>
           <span data-index="5" class="step-menu-item">Hardware</span>
@@ -468,7 +492,6 @@
 
         <!-- Size Inputs -->
         <div class="panel-size-inputs">
-
           <div class="size-input">
             <label for="doorWidthInput">Width</label>
             <input
@@ -515,7 +538,19 @@
               max="600"
             />
           </div>
-          
+        </div>
+        <div class="panel-size-inputs">
+          <div class="size-input">
+            <label for="fanLightHeightInput">Fanlight</label>
+            <input
+              type="number"
+              id="fanLightHeightInput"
+              step="1"
+              value="350"
+              min="350"
+              max="600"
+            />
+          </div>
         </div>
         <!-- Navigation Buttons at the Bottom -->
         <div class="nav-buttons">
@@ -529,33 +564,33 @@
         <!-- Only include the door designer steps (range is now on the start screen) -->
         <!-- Step 0: Configuration -->
         <div id="configuration-step" class="step step-active">
-          
           <div class="grid-container" id="configuration-list"></div>
         </div>
-        <!-- Step 1: Style -->
-        <div id="style-step" class="step">
-          
-          <div id="style-list"></div>
-        </div>
-        <!-- Step 2: Sidescreen Style -->
+        <!-- Step 1: Sidescreen Style -->
         <div id="sidescreen-style-step" class="step">
-          
           <div class="grid-container" id="sidescreen-style-list"></div>
+        </div>
+        <!-- Step 2: Style -->
+        <div id="style-step" class="step">
+          <div id="style-list"></div>
         </div>
         <!-- Step 3: Finish -->
         <div id="finish-step" class="step">
           <div class="finish-group">
-            
             <div class="grid-container" id="external-finish-list"></div>
           </div>
           <div class="finish-group">
-            
             <div class="grid-container" id="internal-finish-list"></div>
+          </div>
+          <div class="finish-group">
+            <div class="grid-container" id="frame-external-finish-list"></div>
+          </div>
+          <div class="finish-group">
+            <div class="grid-container" id="frame-internal-finish-list"></div>
           </div>
         </div>
         <!-- Step 4: Glazing -->
         <div id="glazing-step" class="step">
-          <h3 class="collection-title">Glazing Options</h3>
           <div class="grid-container" id="glazing-list"></div>
         </div>
         <!-- Step 5: Hardware -->
@@ -578,9 +613,8 @@
         </div>
         <div class="preview-body">
           <canvas id="previewCanvas"></canvas>
-          
+
           <div class="vertical-icon-bar">
-           
             <button id="hingeToggleBtn">
               <i class="fa-solid fa-door-open"></i>
             </button>
@@ -604,13 +638,11 @@
             </button>
             <label for="visualiserToggleBtn">Open Visualiser</label>
             <span class="icon-spacer"> </span>
-            
+
             <button id="saveDesignBtn">
               <i class="fa-solid fa-floppy-disk"></i>
             </button>
             <label for="saveDesignBtn">Save Design</label>
-
-
           </div>
         </div>
 
@@ -632,7 +664,7 @@
             font-size: 1.2rem;
           "
         >
-        <i class="fa-solid fa-file-arrow-up"></i>
+          <i class="fa-solid fa-file-arrow-up"></i>
         </button>
         <button
           id="saveMockupBtn"
@@ -654,7 +686,7 @@
             font-size: 1.2rem;
           "
         >
-        <i class="fa-solid fa-xmark"></i>
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
       <div id="visualiserContent">

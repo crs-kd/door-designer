@@ -10,7 +10,7 @@ import { getImageURL } from "./utils.js";
 const imageOverloads = {};
 
 // Door ranges and collections
-const doorRanges = ["Lorimer", "Timberluxe"];
+const doorRanges = ["Lorimer"];
 const doorCollections = [
   "Lorimer",
   "Elegance",
@@ -35,15 +35,16 @@ const doorStyles = [
       texture: "horizontal",
       molding: "short-centre",
     },
-    sidescreenOptions: ["solid", "clear", "midrail"],
+    sidescreenOptions: ["solid", "full", "midrail"],
     glazingLayout: {
       imageModifier: null,
       width: 175,       
       height: 885,      
       offsetX: 0,
-      offsetY: 825,
-      align: "center",         // "left" | "center" | "right"
-      verticalAlign: "bottom"     // "top" | "centre" | "bottom"
+      offsetY: -240,
+      align: "center",
+      blockAnchor: "centre",
+      verticalAlign: "centre", 
     },
 
     glazingOptions: [
@@ -57,6 +58,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+      "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -84,9 +88,10 @@ const doorStyles = [
       width: 175,       
       height: 1185,      
       offsetX: 0,
-      offsetY: 525,
-      align: "center",         // "left" | "center" | "right"
-      verticalAlign: "bottom"     // "top" | "centre" | "bottom"
+      offsetY: 0,
+      align: "center",
+      blockAnchor: "centre",
+      verticalAlign: "centre", 
     },
     glazingOptions: [
       "clear",
@@ -123,9 +128,9 @@ const doorStyles = [
       width: 265,       
       height: 1275,      
       offsetX: 0,
-      offsetY: 480,
-      align: "center",         // "left" | "center" | "right"
-      verticalAlign: "bottom",     // "top" | "centre" | "bottom"
+      offsetY: -90,
+      blockAnchor: "centre",         // this defines how the block aligns to the anchor
+      verticalAlign: "centre", 
       elements: [
         {
           id: "first-glass",
@@ -178,6 +183,16 @@ const doorStyles = [
       molding: "full-left",
     },
     sidescreenOptions: [, "solid", "clear", "midrail"],
+    glazingLayout: {
+      imageModifier: "long",
+      width: 175,       
+      height: 1185,      
+      offsetX: 225,
+      offsetY: 0,
+      align: "left",         // "left" | "center" | "right"
+      blockAnchor: "centre", 
+      verticalAlign: "centre", 
+    },
     glazingOptions: [
       "clear",
       "eden",
@@ -208,6 +223,16 @@ const doorStyles = [
       molding: "full-left",
     },
     sidescreenOptions: [, "solid", "clear", "midrail"],
+    glazingLayout: {
+      imageModifier: "long",
+      width: 175,       
+      height: 1185,      
+      offsetX: 225,
+      offsetY: 0,
+      align: "left",         // "left" | "center" | "right"
+      blockAnchor: "centre", 
+      verticalAlign: "centre", 
+    },
     glazingOptions: [
       "clear",
       "eden",
@@ -238,6 +263,16 @@ const doorStyles = [
       molding: "full-centre",
     },
     sidescreenOptions: [, "solid", "clear", "midrail"],
+    glazingLayout: {
+      imageModifier: "long",
+      width: 175,       
+      height: 1185,      
+      offsetX: 0,
+      offsetY: 0,
+      align: "center",         // "left" | "center" | "right"
+      blockAnchor: "centre", 
+      verticalAlign: "centre", 
+    },
     glazingOptions: [
       "clear",
       "eden",
@@ -268,6 +303,16 @@ const doorStyles = [
       molding: "full-centre",
     },
     sidescreenOptions: [, "solid", "clear", "midrail"],
+    glazingLayout: {
+      imageModifier: "long",
+      width: 175,       
+      height: 1185,      
+      offsetX: 0,
+      offsetY: 0,
+      align: "center",         // "left" | "center" | "right"
+      blockAnchor: "centre", 
+      verticalAlign: "centre", 
+    },
     glazingOptions: [
       "clear",
       "eden",
@@ -298,6 +343,16 @@ const doorStyles = [
       molding: "short-centre",
     },
     sidescreenOptions: [, "solid", "clear", "midrail"],
+    glazingLayout: {
+      imageModifier: null,
+      width: 175,       
+      height: 885,      
+      offsetX: 0,
+      offsetY: -240,
+      align: "center",         // "left" | "center" | "right"
+      blockAnchor: "centre", 
+      verticalAlign: "centre", 
+    },
     glazingOptions: [
       "clear",
       "adina",
@@ -331,6 +386,16 @@ const doorStyles = [
       molding: "full-right",
     },
     sidescreenOptions: [, "solid", "clear", "midrail"],
+    glazingLayout: {
+      imageModifier: "long",
+      width: 175,       
+      height: 1185,      
+      offsetX: -225,
+      offsetY: 0,
+      align: "right",         // "left" | "center" | "right"
+      blockAnchor: "centre", 
+      verticalAlign: "centre", 
+    },
     glazingOptions: [
       "clear",
       "eden",
@@ -361,6 +426,35 @@ const doorStyles = [
       molding: "squares-left",
     },
     sidescreenOptions: [, "solid", "clear", "midrail"],
+    glazingLayout: {
+      imageModifier: "square",
+      width: 265,       
+      height: 1275,      
+      offsetX: 180,
+      offsetY: -90,
+      align: "left",         // "left" | "center" | "right"
+      blockAnchor: "centre", 
+      verticalAlign: "centre", 
+      elements: [
+        {
+          id: "first-glass",
+          rect: { x: 45, y: 45, width: 176, height: 111 }
+        },
+        {
+          id: "second-glass",
+          rect: { x: 45, y: 403.33, width: 176, height: 111 }
+        },
+        {
+          id: "third-glass",
+          rect: { x: 45, y: 761.67, width: 176, height: 111 }
+        },
+        {
+          id: "forth-glass",
+          rect: { x: 45, y: 1120, width: 176, height: 111 }
+        },
+        
+      ]
+    },
     glazingOptions: [
       "clear",
       "eden",
@@ -385,7 +479,21 @@ const configurations = [
   { value: "single", name: "Single Door" },
   { value: "single-left", name: "Left Sidescreen" },
   { value: "single-right", name: "Right Sidescreen" },
-  { value: "single-both", name: "Left & Right Sidescreens" },
+  { value: "single-left-right", name: "Left & Right Sidescreens" },
+  { value: "single-fanlight", name: "Single Door + Fanlight" },
+  { value: "single-left-fanlight", name: "Left Sidescreen + Fanlight" },
+  { value: "single-right-fanlight", name: "Right Sidescreen + Fanlight" },
+  { value: "single-left-right-fanlight", name: "Both Sidescreens + Fanlight" },
+
+  // Full-height sidescreens
+  { value: "single-leftfull-fanlight", name: "Left Sidescreen Full Height + Fanlight" },
+  { value: "single-rightfull-fanlight", name: "Right Sidescreen Full Height + Fanlight" },
+  { value: "single-leftfull-rightfull-fanlight", name: "Both Sidescreens Full Height + Fanlight" },
+
+  // Fanlight full-width variants
+  { value: "single-left-fanlightwide", name: "Fanlight Full Width (Left Sidescreen + Door)" },
+  { value: "single-right-fanlightwide", name: "Fanlight Full Width (Right Sidescreen + Door)" },
+  { value: "single-left-right-fanlightwide", name: "Fanlight Full Width (Door + Sidescreens)" }
 ];
 
 // Optional display name lookups
@@ -398,51 +506,54 @@ const styleDisplayNames = {
   // Add more if needed
 };
 
-/* 
-   For door color “finishes,” we still have the original array & mapping.
-   This controls the door’s base color & optional texture overlay 
-   (woodgrain, smooth, etc. for the main door panel).
-*/
-const finishes = [
-  "Brilliant White",
-  "Rosewood",
-  "Golden Oak",
-  "Anthracite Grey",
-];
-const finishDisplayNames = {
-  "Brilliant White": "Brilliant White",
-  Rosewood: "Rosewood",
-  "Golden Oak": "Golden Oak",
-  "Anthracite Grey": "Anthracite Grey",
-  "Chartwell Green": "Chartwell Green",
-};
-const finishColorMap = {
-  "Brilliant White": {
+const finishOptions = [
+  {
+    name: "Brilliant White",
+    displayName: "Brilliant White",
     color: "rgb(240,240,240)",
-    texture: null,
-    textureBlend: "source-over",
+    ranges: ["Lorimer", "Allure","Timberluxe"]
   },
-  Rosewood: {
+  {
+    name: "Rosewood",
+    displayName: "Rosewood",
     color: "rgb(84, 37, 33)",
     texture: getImageURL("woodgrain"),
-    textureBlend: "multiply",
+    textureBlend: "overlay",
+    ranges: ["Lorimer", "Allure","Timberluxe"]
   },
-  "Golden Oak": {
-    color: "rgb(124, 73, 34)",
+  {
+    name: "Golden Oak",
+    displayName: "Golden Oak",
+    color: "rgb(116, 69, 35)",
     texture: getImageURL("woodgrain"),
     textureBlend: "overlay",
+    ranges: ["Lorimer", "Allure","Timberluxe"]
   },
-  "Anthracite Grey": {
+  {
+    name: "Anthracite Grey",
+    displayName: "Anthracite Grey",
     color: "rgb(69,69,74)",
-    texture: null,
     textureBlend: "multiply",
+    ranges: ["Lorimer", "Allure","Timberluxe"]
   },
-  "Chartwell Green": {
+  {
+    name: "Chartwell Green",
+    displayName: "Chartwell Green",
     color: "rgb(165, 194, 172)",
-    texture: null,
     textureBlend: "multiply",
-  },
+    ranges: ["Timberluxe"]
+  }
+];
+
+const internalFinishMap = {
+  "Brilliant White": ["Brilliant White"],
+  "Rosewood": ["Brilliant White", "Rosewood"],
+  "Golden Oak": ["Brilliant White", "Golden Oak"],
+  "Anthracite Grey": ["Brilliant White"],
+  "Chartwell Green": ["Brilliant White"]
 };
+
+
 
 // Separate definitions for style-based assets
 // 1) Textures
@@ -526,7 +637,10 @@ const moldingDefs = [
     width: 265,
     height: 975,
     align: "center", // "left" | "right" | "center"
-    offsetY: 780,
+    blockAnchor: "centre",         // this defines how the block aligns to the anchor
+    verticalAlign: "centre", 
+    offsetX: 0,
+    offsetY: -240,
     elements: [
       {
         id: "allure-x-top",
@@ -616,7 +730,12 @@ const moldingDefs = [
     width: 265,
     height: 1275,
     align: "center", // "left" | "right" | "center"
-    offsetY: 480,
+    blockAnchor: "centre", 
+    verticalAlign: "centre", 
+    offsetX: 0,
+    offsetY: 0,
+
+    
     elements: [
       {
         id: "allure-x-top",
@@ -705,9 +824,11 @@ const moldingDefs = [
     id: "full-left",
     width: 265,
     height: 1275,
-    align: "left", // "left" | "right" | "center"
+    align: "left",
+    blockAnchor: "centre", 
+    verticalAlign: "centre", 
     offsetX: 180,
-    offsetY: 480,
+    offsetY: 0,
     elements: [
       {
         id: "allure-x-top",
@@ -796,8 +917,10 @@ const moldingDefs = [
     width: 265,
     height: 1275,
     align: "right", // "left" | "right" | "center"
+    blockAnchor: "centre", 
+    verticalAlign: "centre", 
     offsetX: -180,
-    offsetY: 480,
+    offsetY: 0,
     elements: [
       {
         id: "allure-x-top",
@@ -887,7 +1010,345 @@ const moldingDefs = [
     width: 265,
     height: 1275,
     align: "centre", // "left" | "right" | "center"
-    offsetY: 480,
+    blockAnchor: "centre", 
+    verticalAlign: "centre", 
+    offsetY: -90,
+    elements: [
+      // First
+      {
+        id: "allure-x-top",
+        rect: { x: 0, y: 0, width: 265, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-x-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-x-bottom",
+        rect: { x: 0, y: 155, width: 265, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-x-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-y-left",
+        rect: { x: 0, y:0,  width: 45, height: 200 },
+        options: {
+          imageURL: getImageURL("allure-y-left"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-y-right",
+        rect: { x: "right", y:0,  width: 45, height: 200 },
+        options: {
+          imageURL: getImageURL("allure-y-right"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-left-top",
+        rect: { x: 0, y: 0, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-left-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-right-top",
+        rect: { x: "right", y: 0, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-right-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-left-bottom",
+        rect: { x: 0, y: 155, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-left-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-right-bottom",
+        rect: { x: "right", y: 155, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-right-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      // Second
+      {
+        id: "allure-x-top",
+        rect: { x: 0, y: 358.33, width: 265, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-x-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+        {
+        id: "allure-x-bottom",
+        rect: { x: 0, y: 513.33, width: 265, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-x-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-y-left",
+        rect: { x: 0, y:358.33,  width: 45, height: 200 },
+        options: {
+          imageURL: getImageURL("allure-y-left"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-y-right",
+        rect: { x: "right", y:358.33,  width: 45, height: 200 },
+        options: {
+          imageURL: getImageURL("allure-y-right"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-left-top",
+        rect: { x: 0, y: 358.33, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-left-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-right-top",
+        rect: { x: "right", y: 358.33, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-right-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-left-bottom",
+        rect: { x: 0, y: 513.33, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-left-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-right-bottom",
+        rect: { x: "right", y: 513.33, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-right-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      // Third
+      {
+        id: "allure-x-top",
+        rect: { x: 0, y: 716.67, width: 265, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-x-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-x-bottom",
+        rect: { x: 0, y: 871.67, width: 265, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-x-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-y-left",
+        rect: { x: 0, y:716.67,  width: 45, height: 199 },
+        options: {
+          imageURL: getImageURL("allure-y-left"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-y-right",
+        rect: { x: "right", y:716.67,  width: 45, height: 199 },
+        options: {
+          imageURL: getImageURL("allure-y-right"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-left-top",
+        rect: { x: 0, y: 716.67, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-left-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-right-top",
+        rect: { x: "right", y: 716.67, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-right-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-left-bottom",
+        rect: { x: 0, y: 871.67, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-left-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-right-bottom",
+        rect: { x: "right", y: 871.67, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-right-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      // Forth
+      {
+        id: "allure-x-top",
+        rect: { x: 0, y: 1075, width: 265, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-x-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-x-bottom",
+        rect: { x: 0, y: 1230, width: 265, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-x-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-y-left",
+        rect: { x: 0, y:1075,  width: 45, height: 200 },
+        options: {
+          imageURL: getImageURL("allure-y-left"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-y-right",
+        rect: { x: "right", y:1075,  width: 45, height: 200 },
+        options: {
+          imageURL: getImageURL("allure-y-right"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-left-top",
+        rect: { x: 0, y: 1075, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-left-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-right-top",
+        rect: { x: "right", y: 1075, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-right-top"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-left-bottom",
+        rect: { x: 0, y: 1230, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-left-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+      {
+        id: "allure-corner-right-bottom",
+        rect: { x: "right", y: 1230, width: 45, height: 45 },
+        options: {
+          imageURL: getImageURL("allure-corner-right-bottom"),
+          flipHorizontal: false,
+          flipVertical: false,
+          rotation: 0,
+        },
+      },
+    ],
+  },
+  {
+    id: "squares-left",
+    width: 265,
+    height: 1275,
+    align: "left", // "left" | "right" | "center"
+    blockAnchor: "centre",
+    verticalAlign: "centre",
+    offsetX: 180,
+    offsetY: -90,
     elements: [
       // First
       {
@@ -1270,6 +1731,21 @@ const glazingDefs = [
     id: "virtue",
     image: "virtue",
   },
+    // Digital Glass
+    {
+      id: "digital",
+      image: "digital",
+    },
+      // Contora Glass
+  {
+    id: "contora",
+    image: "contora",
+  },
+    // Charcoal Sticks Glass
+    {
+      id: "charcoal",
+      image: "charcoal",
+    },
 ];
 
 const sidescreenStyleDefs = [
@@ -1278,20 +1754,21 @@ const sidescreenStyleDefs = [
     name: "Match Door Style",
   },
   {
-    id: "clear",
-    name: "Clear",
-    glazing: "clear-full",
+    id: "full",
+    name: "Full",
+    glazing: "clear",
   },
   {
     id: "solid",
     name: "Solid",
+    glazing: "none",
   },
   {
     id: "midrail",
     name: "Midrail",
     midFrameHeight: 75,
     midFrameOffsetY: 75,
-    glazing: "clear-full",
+    glazing: "clear",
     midFrameElements: [
       {
         id: "top-transom",
@@ -1316,7 +1793,7 @@ const sidescreenStyleDefs = [
       {
         id: "left-top-transom-end",
         rect: { x: 0, y: 0, width: 35, height: 20 },
-        options: { imageURL: getImageURL("transom-end"), flipVertical: false },
+        options: { imageURL: getImageURL("transom-end") },
       },
       {
         id: "right-top-transom-end",
@@ -1339,8 +1816,13 @@ const sidescreenStyleDefs = [
 
 const sidescreenGlazingDefs = [
   {
-    id: "clear-full",
+    id: "clear",
     image: "clear",
+    margin: 35,
+  },
+  {
+    id: "digital",
+    image: "digital",
     margin: 35,
   },
 ];
@@ -1421,22 +1903,24 @@ const glazingDisplayNames = {
   murano: "Murano Black",
   satin: "Satin",
   virtue: "Virtue",
+  digital: "Digital",
+  contora: "Contora",
+  charcoal: "Charcoal Sticks",
 };
 
 // Steps & wizard state
 const stepIDs = [
   "configuration-step",
-  "style-step",
   "sidescreen-style-step",
+  "style-step",
   "finish-step",
   "glazing-step",
   "hardware-step",
 ];
 
-// Range selection for the start screen
 export const state = {
   currentStep: 0,
-  stepsCompleted: Array(6).fill(true),
+  stepsCompleted: Array(7).fill(true),
   selectedRange: doorRanges[0],
   selectedStyle: "berlin",
   selectedConfiguration: "single",
@@ -1445,14 +1929,17 @@ export const state = {
   selectedHardwareColor: "gold",
   selectedHandle: "lever",
   handleSide: "right",
-  selectedExternalFinish: finishes[2],
-  selectedInternalFinish: finishes[0],
+  selectedExternalFinish: "Golden Oak",
+  selectedInternalFinish: "Brilliant White",
+  selectedExternalFrameFinish: "Golden Oak",
+  selectedInternalFrameFinish: "Brilliant White",
   selectedLeftPanel: null,
   selectedRightPanel: null,
-  selectedSideScreenStyle: "solid",
+  selectedSidescreenStyle: "solid",
   backgroundImg: null,
   currentView: "external",
   glazingObscureEnabled: false,
+  hasFanlight: false,
 };
 
 export {
@@ -1462,9 +1949,7 @@ export {
   doorStyles,
   imageOverloads,
   styleDisplayNames,
-  glazingDefs,
-  finishDisplayNames,
-  finishColorMap,
+  glazingDefs,  
   handleDefs,
   hardwareColorMap,
   moldingDefs,
@@ -1474,9 +1959,10 @@ export {
   handleDisplayNames,
   letterplateDisplayNames,
   glazingDisplayNames,
+  finishOptions,
+  internalFinishMap,
   hardwareColorOptions,
   stepIDs,
-  finishes,
   handleOptions,
   sidescreenGlazingDefs,
   sidescreenStyleDefs,
