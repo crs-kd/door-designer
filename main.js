@@ -1,5 +1,6 @@
 import { updateCanvasPreview } from "./canvasBuilder.js";
 import { state, stepIDs} from "./data.js";
+import { updateConfigurationOptionVisibility } from './ui.js';
 
 /*
    ---------------------------------------------
@@ -78,3 +79,7 @@ document.getElementById("doorHeightInput").addEventListener("change", updateCanv
 document.getElementById("leftSidescreenWidthInput").addEventListener("change", updateCanvasPreview);
 document.getElementById("rightSidescreenWidthInput").addEventListener("change", updateCanvasPreview);
 document.getElementById("fanLightHeightInput")?.addEventListener("change", updateCanvasPreview);
+
+document.addEventListener("DOMContentLoaded", () => {
+  updateConfigurationOptionVisibility(); // <-- ensures inputs and steps match default config
+});
