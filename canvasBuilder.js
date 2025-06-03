@@ -1343,12 +1343,8 @@ async function updateCanvasPreview() {
    letting the user download the result.
 */
 function compositeAndSaveVisualiser() {
-  let fileName = prompt(
-    "Enter a file name for your saved image:",
-    "visualiser-composite.png"
-  );
-  if (!fileName) fileName = "visualiser-composite.png";
-  if (!fileName.toLowerCase().endsWith(".png")) fileName += ".png";
+  const styleName = state.selectedStyle || "door";
+  const safeFileName = `${styleName}-visual.png`.replace(/[\/\\?%*:|"<>]/g, "-");
 
   const visualiserContent = document.getElementById("visualiserContent");
   const w = visualiserContent.clientWidth;
@@ -1368,7 +1364,7 @@ function compositeAndSaveVisualiser() {
   const dataURL = compositeCanvas.toDataURL("image/png");
   const link = document.createElement("a");
   link.href = dataURL;
-  link.download = fileName;
+  link.download = safeFileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -1698,11 +1694,11 @@ document.addEventListener("DOMContentLoaded", () => {
     compositeAndSaveVisualiser();
   });
 
-  document.getElementById("opacityToggleBtn").addEventListener("click", () => {
-    state.glazingObscureEnabled = !state.glazingObscureEnabled;
-    updateCanvasPreview();
-    updateSummary(); // if summary reflects the glazing state
-  });
+  // document.getElementById("opacityToggleBtn").addEventListener("click", () => {
+  //   state.glazingObscureEnabled = !state.glazingObscureEnabled;
+  //   updateCanvasPreview();
+  //   updateSummary(); // if summary reflects the glazing state
+  // });
 
   document.getElementById("toggleBackBtn").addEventListener("click", () => {
     document.getElementById("visualiserMode").style.display = "none";
@@ -1741,28 +1737,14 @@ function compositeAndSave() {
       return;
     }
 
-    // Flip for internal
+    // Flip for internal view
     if (state.currentView === "internal") {
       mirrorCanvas(previewCanvas);
     }
 
-    const styleName =
-      styleDisplayNames[state.selectedStyle] || state.selectedStyle || "Style";
-    const finishKey =
-      state.currentView === "external"
-        ? state.selectedExternalFinish
-        : state.selectedInternalFinish;
-    const finishName = finishDisplayNames[finishKey] || finishKey || "Finish";
-    const glazingName =
-      glazingDisplayNames[state.selectedGlazing] ||
-      state.selectedGlazing ||
-      "Glass";
+    const styleName = state.selectedStyle || "door";
 
-    const safeFileName =
-      `${styleName}-${finishName}-${glazingName}.png`.replace(
-        /[\/\\?%*:|"<>]/g,
-        "-"
-      );
+    const safeFileName = `${styleName}.png`.replace(/[\/\\?%*:|"<>]/g, "-");
 
     const dataURL = previewCanvas.toDataURL("image/png");
     const link = document.createElement("a");
