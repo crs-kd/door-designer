@@ -1186,7 +1186,6 @@ async function buildFanlightComposite(targetWidth, targetHeight, frameFinish, fi
    ---------------------------------------------
    updateCanvasPreview()
    ---------------------------------------------
-   Draws the door, sidescreens, fanlight, plus any style-based texture/molding, glazing, hardware, etc.
 */
 function parseConfigurationFlags(configValue) {
   return {

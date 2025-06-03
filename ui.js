@@ -48,7 +48,8 @@ function updateViewIndicator() {
 function updateConfigurationOptionVisibility() {
   const leftInputWrapper = document.getElementById("leftSidescreenWidthInput")?.closest(".size-input");
   const rightInputWrapper = document.getElementById("rightSidescreenWidthInput")?.closest(".size-input");
-
+  const fanlightInputWrapper = document.getElementById("fanLightHeightInput")?.closest(".size-input");
+  
   const sidescreenStyleStep = document.getElementById("step-sidescreenStyle");
 
   const sidescreenStyleMenu = document.querySelector('.step-menu-item[data-index="1"]');
@@ -59,13 +60,12 @@ function updateConfigurationOptionVisibility() {
   const showRight = config.includes("right");
   const hasFanlight = config.includes("fanlight");
   const hasSidescreen = showLeft || showRight;
-
-  // Update state
-  state.hasFanlight = hasFanlight;
+  
 
   // Input visibility
   if (leftInputWrapper) leftInputWrapper.style.display = showLeft ? "flex" : "none";
   if (rightInputWrapper) rightInputWrapper.style.display = showRight ? "flex" : "none";
+  if (fanlightInputWrapper) fanlightInputWrapper.style.display = hasFanlight ? "flex" : "none";
 
   // Step section visibility
   if (sidescreenStyleStep) sidescreenStyleStep.style.display = hasSidescreen ? "block" : "none";

@@ -35,7 +35,7 @@ const doorStyles = [
       texture: "horizontal",
       molding: "short-centre",
     },
-    sidescreenOptions: ["solid", "full", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: null,
       width: 175,       
@@ -64,9 +64,8 @@ const doorStyles = [
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
-      "letterplate-mid": "letterplate-mid-A",
-      "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-mid": "letterplate-mid-a",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -82,7 +81,7 @@ const doorStyles = [
       texture: "vertical",
       molding: "full-centre",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: "long",
       width: 175,       
@@ -106,7 +105,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -122,7 +121,7 @@ const doorStyles = [
       texture: null,
       molding: "squares-centre",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: "square",
       width: 265,       
@@ -166,7 +165,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -182,7 +181,7 @@ const doorStyles = [
       texture: "vertical",
       molding: "full-left",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: "long",
       width: 175,       
@@ -206,7 +205,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -222,7 +221,7 @@ const doorStyles = [
       texture: "horizontal",
       molding: "full-left",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: "long",
       width: 175,       
@@ -246,7 +245,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -262,7 +261,7 @@ const doorStyles = [
       texture: "horizontal",
       molding: "full-centre",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: "long",
       width: 175,       
@@ -286,7 +285,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -302,7 +301,7 @@ const doorStyles = [
       texture: null,
       molding: "full-centre",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: "long",
       width: 175,       
@@ -326,7 +325,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -342,7 +341,7 @@ const doorStyles = [
       texture: null,
       molding: "short-centre",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: null,
       width: 175,       
@@ -368,8 +367,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-mid": "letterplate-mid-A",
-      "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -385,7 +383,7 @@ const doorStyles = [
       texture: null,
       molding: "full-right",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: "long",
       width: 175,       
@@ -409,7 +407,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -425,7 +423,7 @@ const doorStyles = [
       texture: null,
       molding: "squares-left",
     },
-    sidescreenOptions: [, "solid", "clear", "midrail"],
+    sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       imageModifier: "square",
       width: 265,       
@@ -468,7 +466,7 @@ const doorStyles = [
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
       "letterplate-low": "letterplate-low-A",
-      "letterplate-ground": "letterplate-ground-A",
+      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -1825,6 +1823,16 @@ const sidescreenGlazingDefs = [
     image: "digital",
     margin: 35,
   },
+    {
+    id: "contora",
+    image: "contora",
+    margin: 35,
+  },
+    {
+    id: "charcoal",
+    image: "charcoal",
+    margin: 35,
+  },
 ];
 
 // Letterplates, hardware, etc.
@@ -1832,7 +1840,7 @@ const letterplateDisplayNames = {
   "letterplate-none": "None",
   "letterplate-mid": "Mid",
   "letterplate-low": "Low",
-  "letterplate-ground": "Ground",
+  "letterplate-btm": "btm",
 };
 
 const hardwareColorOptions = ["gold", "black", "chrome", "graphite"];
@@ -1849,11 +1857,11 @@ const handleDisplayNames = { lever: "Lever" };
 // Coordinates for letterplates
 const letterplateDefs = [
   {
-    id: "letterplate-mid-A",
+    id: "letterplate-mid-a",
     width: 100,
     height: 25,
     align: "center",
-    offsetY: 210,
+    offsetY: 170,
   },
   {
     id: "letterplate-low-A",
@@ -1863,7 +1871,7 @@ const letterplateDefs = [
     offsetY: 85,
   },
   {
-    id: "letterplate-ground-A",
+    id: "letterplate-btm-A",
     width: 100,
     height: 25,
     align: "center",
@@ -1878,7 +1886,7 @@ const handleDefs = [
     width: 40,
     height: 65,
     align: "right", // visual alignment (used for positioning from panel edge)
-    offsetX: 19,
+    offsetX: 21,
     offsetY: 250,
     side: "right", // logical side it belongs on; use this to place hinge on the opposite side
     mirrorWhenLeft: true, // whether to mirror the image when used on the left
@@ -1924,7 +1932,7 @@ export const state = {
   selectedRange: doorRanges[0],
   selectedStyle: "berlin",
   selectedConfiguration: "single",
-  selectedGlazing: "adina",
+  selectedGlazing: "clear",
   selectedLetterplate: null,
   selectedHardwareColor: "gold",
   selectedHandle: "lever",
@@ -1935,8 +1943,8 @@ export const state = {
   selectedInternalFrameFinish: "Brilliant White",
   selectedLeftPanel: null,
   selectedRightPanel: null,
-  selectedSidescreenStyle: "solid",
-  backgroundImg: null,
+  selectedSidescreenStyle: "full",
+  backbtmImg: null,
   currentView: "external",
   glazingObscureEnabled: false,
   hasFanlight: false,
