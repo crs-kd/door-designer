@@ -59,7 +59,8 @@ import {
   styleDisplayNames,
   glazingDisplayNames,
   letterplateDisplayNames,
-  handleDisplayNames
+  handleDisplayNames,
+  configurations,
 } from "./data.js";
 
 async function drawPanelElement(ctx, rect, options) {
@@ -1402,6 +1403,7 @@ function compositeAndSaveVisualiser() {
    ---------------------------------------------
 */
 
+
 function wrapText(text, maxCharsPerLine) {
   const words = text.split(" ");
   const lines = [];
@@ -1444,10 +1446,9 @@ function exportSummary() {
     compositeCanvas.height = exportHeight;
 
     const ctx = compositeCanvas.getContext("2d");
-    ctx.fillStyle = "#fff"; // White background
+    ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, exportWidth, exportHeight);
 
-    // Scale the door preview image
     const scale = Math.min(
       exportWidth / previewCanvas.width,
       imageMaxHeight / previewCanvas.height
@@ -1479,45 +1480,56 @@ function exportSummary() {
     const letterplateText = toTitleCase(letterplateDisplayNames?.[originalLetterplateKey] || originalLetterplateKey);
     const handleText = toTitleCase(handleDisplayNames?.[state.selectedHandle] || state.selectedHandle || "None");
 
-ctx.fillStyle = "#000";
-ctx.font = "14px sans-serif";
-ctx.textAlign = "left";
+    const configObj = configurations.find(c => c.value === state.selectedConfiguration);
+    const configName = configObj ? configObj.name : "None";
 
-// Draw separator line
-const lineY = imageY + scaledHeight + 40;
-ctx.beginPath();
-ctx.moveTo(20, lineY);
-ctx.lineTo(exportWidth - 20, lineY);
-ctx.lineWidth = 1;
-ctx.strokeStyle = "#ccc";
-ctx.stroke();
+    const sidescreenGlazing = toTitleCase(state.selectedSidescreenGlazing || "None");
+    const sidescreenStyle = toTitleCase(state.selectedSidescreenStyle || "None");
 
-// Summary lines (label + value)
-const summaryItems = [
-  ["Style", styleName],
-  ["Glazing", glazingName],
-  ["External Colour", externalColour],
-  ["Internal Colour", internalColour],
-  ["Hardware Colour", hardwareColour],
-  ["Letterplate", letterplateText],
-  ["Handle", handleText]
-];
+    // Draw separator line
+    const lineY = imageY + scaledHeight + 40;
+    ctx.beginPath();
+    ctx.moveTo(20, lineY);
+    ctx.lineTo(exportWidth - 20, lineY);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#ccc";
+    ctx.stroke();
 
-// Calculate max label width
-ctx.font = "bold 14px sans-serif";
-const labelWidths = summaryItems.map(([label]) => ctx.measureText(`${label}:`).width);
-const labelX = 20;
-const valueX = labelX + Math.max(...labelWidths) + 10; // 10px padding
+    // Summary items
+    const summaryItems = [
+      ["Configuration", configName],
+      ["Panel", styleName],
+      ["Glazing", glazingName],
+      ["Sidescreen", sidescreenStyle],
+      ["Sidescreen Glazing", sidescreenGlazing],
+      ["External Colour", externalColour],
+      ["Internal Colour", internalColour],
+      ["Hardware Colour", hardwareColour],
+      ["Letterplate", letterplateText],
+      ["Handle", handleText]
+    ];
 
-let textY = lineY + 30;
-for (const [label, value] of summaryItems) {
-  ctx.font = "bold 14px sans-serif";
-  ctx.fillText(`${label}:`, labelX, textY);
-  ctx.font = "14px sans-serif";
-  ctx.fillText(value, valueX, textY);
-  textY += 24;
-}
-    // File name and save
+    // Draw summary items with aligned columns
+    ctx.fillStyle = "#000";
+    ctx.font = "14px sans-serif";
+    ctx.textAlign = "left";
+
+    // Measure label widths for alignment
+    ctx.font = "bold 14px sans-serif";
+    const labelWidths = summaryItems.map(([label]) => ctx.measureText(`${label}:`).width);
+    const labelX = 20;
+    const valueX = labelX + Math.max(...labelWidths) + 10;
+
+    let textY = lineY + 30;
+    for (const [label, value] of summaryItems) {
+      ctx.font = "bold 14px sans-serif";
+      ctx.fillText(`${label}:`, labelX, textY);
+      ctx.font = "14px sans-serif";
+      ctx.fillText(value, valueX, textY);
+      textY += 24;
+    }
+
+    // Footer
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -1526,22 +1538,53 @@ for (const [label, value] of summaryItems) {
     const min = String(now.getMinutes()).padStart(2, '0');
     const datePart = `${dd}-${mm}-${yyyy}`;
     const timePart = `${hh}.${min}`;
-    let fileName = `Export Summary - ${styleName} - ${datePart} at ${timePart}.jpg`;
-    fileName = fileName.replace(/[\/\\?%*:|"<>]/g, "-");
+    const footerText = `Exported on ${datePart} at ${timePart}`;
 
-    const dataURL = compositeCanvas.toDataURL("image/jpeg", 0.95); // JPEG with white background
-    const link = document.createElement("a");
-    link.href = dataURL;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Draw footer separator
+    ctx.beginPath();
+    ctx.moveTo(0, exportHeight - 60);
+    ctx.lineTo(exportWidth, exportHeight - 60);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#ccc";
+    ctx.stroke();
 
-    state.currentView = originalView;
-    updateCanvasPreview();
+    // Footer background
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, exportHeight - 60, exportWidth, 60);
+
+    // Footer timestamp
+    ctx.fillStyle = "#000";
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(footerText, 20, exportHeight - 30);
+
+    // Footer logo
+    const logo = new Image();
+    logo.onload = () => {
+      const logoWidth = 100;
+      const logoHeight = 30;
+      const logoX = exportWidth - logoWidth - 20;
+      const logoY = exportHeight - 45;
+      ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+
+      // Save after logo is drawn
+      let fileName = `Export Summary - ${styleName} - ${datePart} at ${timePart}.jpg`;
+      fileName = fileName.replace(/[\/\\?%*:|"<>]/g, "-");
+
+      const dataURL = compositeCanvas.toDataURL("image/jpeg", 0.95);
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      state.currentView = originalView;
+      updateCanvasPreview();
+    };
+    logo.src = "https://crs-kd.github.io/door-designer/logo-blue.png";
   }, 100);
 }
-
 /*
    ---------------------------------------------
    Handling Thumbnail Clicks

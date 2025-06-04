@@ -501,21 +501,21 @@ const doorStyles = [
 
 // Configuration choices
 const configurations = [
-  { value: "single", name: "Single Door" },
-  { value: "single-left", name: "Left Sidescreen" },
-  { value: "single-right", name: "Right Sidescreen" },
-  { value: "single-left-right", name: "Left & Right Sidescreens" },
-  { value: "single-fanlight", name: "Single Door + Fanlight" },
+  { value: "single", name: "Single Panel" },
+  { value: "single-left", name: "Single panel with left sidescreen" },
+  { value: "single-right", name: "Single panel with right sidescreen" },
+  { value: "single-left-right", name: "Single panel with left and right sidescreens" },
+  { value: "single-fanlight", name: "Single panel with fanlight" },
 
   // Full-height sidescreens
-  { value: "single-leftfull-fanlight", name: "Left Sidescreen Full Height + Fanlight" },
-  { value: "single-rightfull-fanlight", name: "Right Sidescreen Full Height + Fanlight" },
-  { value: "single-leftfull-rightfull-fanlight", name: "Both Sidescreens Full Height + Fanlight" },
+  { value: "single-leftfull-fanlight", name: "Single panel with left sidescreen and fanlight" },
+  { value: "single-rightfull-fanlight", name: "Single panel with right sidescreen and fanlight" },
+  { value: "single-leftfull-rightfull-fanlight", name: "Single panel with left and right sidescreen and fanlight" },
 
   // Fanlight full-width variants
-  { value: "single-left-fanlightwide", name: "Fanlight Full Width (Left Sidescreen + Door)" },
-  { value: "single-right-fanlightwide", name: "Fanlight Full Width (Right Sidescreen + Door)" },
-  { value: "single-left-right-fanlightwide", name: "Fanlight Full Width (Door + Sidescreens)" }
+  { value: "single-left-fanlightwide", name: "Single panel with left sidescreen and full width fanlight" },
+  { value: "single-right-fanlightwide", name: "Single panel with right sidescreen and full width fanlight" },
+  { value: "single-left-right-fanlightwide", name: "Single panel with left and right sidescreen and full width fanlight" }
 ];
 
 // Optional display name lookups
