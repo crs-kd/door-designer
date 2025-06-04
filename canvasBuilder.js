@@ -1568,7 +1568,7 @@ function exportSummary() {
       state.currentView = originalView;
       updateCanvasPreview();
     };
-    logo.src = "./assets/logo-blue.png"; // Or secure remote URL if hosted
+    logo.src = "https://crs-kd.github.io/door-designer/logo-blue.png";
   }, 100);
 }
 
