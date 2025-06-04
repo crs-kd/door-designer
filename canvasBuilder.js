@@ -1521,7 +1521,7 @@ function exportSummary() {
     const timePart = `${hh}:${min}`;
     ctx.font = "12px sans-serif";
     ctx.fillStyle = "#000";
-    ctx.fillText(`Exported on ${datePart} at ${timePart}`, 20, exportHeight - 20);
+    ctx.fillText(`${datePart} | ${timePart}`, 20, exportHeight - 20);
 
     // --- Footer Logo ---
     const logo = new Image();
