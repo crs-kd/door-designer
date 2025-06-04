@@ -1907,8 +1907,8 @@ const letterplateDefs = [
 const handleDefs = [
   {
     id: "lever",
-    width: 40,
-    height: 65,
+    width: 36,
+    height: 62,
     align: "right", // visual alignment (used for positioning from panel edge)
     offsetX: 21,
     offsetY: 250,

@@ -59,8 +59,6 @@ import {
   styleDisplayNames,
   glazingDisplayNames,
   letterplateDisplayNames,
-  handleDisplayNames,
-  configurations,
 } from "./data.js";
 
 async function drawPanelElement(ctx, rect, options) {
@@ -193,57 +191,66 @@ async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish)
   }
 
   // Step 2: Frame
-  const frameElements = JSON.parse(
-    JSON.stringify([
-      {
-        id: "top-frame",
-        mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
-        options: { imageURL: getImageURL("frame-x") },
+  const isInternalView = state.currentView === "internal";
+const frameSuffix = isInternalView ? "-int" : ""; // e.g. "frame-x-int"
+
+const frameElements = JSON.parse(
+  JSON.stringify([
+    {
+      id: "top-frame",
+      mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
+      options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
+    },
+    {
+      id: "bottom-frame",
+      mixedRect: { y: "bottom", height: 17, xFactor: 0, widthFactor: 1 },
+      options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
+    },
+    {
+      id: "left-vertical-frame",
+      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: getImageURL(`frame-y${frameSuffix}`) },
+    },
+    {
+      id: "right-vertical-frame",
+      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
+      options: {
+        imageURL: getImageURL(`frame-y${frameSuffix}`),
+        flipHorizontal: true,
       },
-      {
-        id: "bottom-frame",
-        mixedRect: { y: "bottom", height: 17, xFactor: 0, widthFactor: 1 },
-        options: { imageURL: getImageURL("frame-x") },
+    },
+    {
+      id: "top-left-corner",
+      rect: { x: 0, y: 0, width: 35, height: 35 },
+      options: { imageURL: getImageURL(`frame-corner${frameSuffix}`) },
+    },
+    {
+      id: "top-right-corner",
+      rect: { x: "right", y: 0, width: 35, height: 35 },
+      options: {
+        imageURL: getImageURL(`frame-corner${frameSuffix}`),
+        flipHorizontal: true,
       },
-      {
-        id: "left-vertical-frame",
-        mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
-        options: { imageURL: getImageURL("frame-y") },
+    },
+    {
+      id: "bottom-right-corner",
+      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      options: {
+        imageURL: getImageURL(`frame-y${frameSuffix}`),
+        flipVertical: true,
+        flipHorizontal: true,
       },
-      {
-        id: "right-vertical-frame",
-        mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
-        options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
+    },
+    {
+      id: "bottom-left-corner",
+      rect: { x: 0, y: "bottom", width: 35, height: 35 },
+      options: {
+        imageURL: getImageURL(`frame-y${frameSuffix}`),
+        flipVertical: true,
       },
-      {
-        id: "top-left-corner",
-        rect: { x: 0, y: 0, width: 35, height: 35 },
-        options: { imageURL: getImageURL("frame-corner") },
-      },
-      {
-        id: "top-right-corner",
-        rect: { x: "right", y: 0, width: 35, height: 35 },
-        options: {
-          imageURL: getImageURL("frame-corner"),
-          flipHorizontal: true,
-        },
-      },
-      {
-        id: "bottom-right-corner",
-        rect: { x: "right", y: "bottom", width: 35, height: 35 },
-        options: {
-          imageURL: getImageURL("frame-y"),
-          flipVertical: true,
-          flipHorizontal: true,
-        },
-      },
-      {
-        id: "bottom-left-corner",
-        rect: { x: 0, y: "bottom", width: 35, height: 35 },
-        options: { imageURL: getImageURL("frame-y"), flipVertical: true },
-      },
-    ])
-  );
+    },
+  ])
+);
 
   const frameMask = buildMoldingMask(
     { elements: frameElements },
@@ -568,37 +575,41 @@ async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish)
         }
       }
       // Step 7: Internal-only Hinge
-      if (state.currentView === "internal") {
-        const hingeImg = await loadImage(getImageURL("hinge"));
-        if (hingeImg) {
-          const hW = 10;
-          const hH = 40;
-          const gap = 320;
-          const startY = 130;
+if (state.currentView === "internal") {
+  const hingeImg = await loadImage(getImageURL("hinge"));
+  if (hingeImg) {
+    const hW = 6;
+    const hH = 32;
+    const hingeGap = 190;
+    const hingeCount = 3;
 
-          const hingeOffsetX = hDef.hingeOffsetX ?? 24;
-          const isLeft = state.handleSide === "left";
-          const hingeX = isLeft ? panelWidth - hW - hingeOffsetX : hingeOffsetX;
+    const totalHeight = hingeCount * hH + (hingeCount - 1) * hingeGap;
+    const startY = (panelHeight - totalHeight) / 2;
 
-          const internalFinishData =
-          finishOptions.find(f => f.name === state.selectedInternalFinish) || {
-            color: "#000",
-          };
-        const tintedHinge = tintImage(hingeImg, internalFinishData.color);
+    const hingeOffsetX = hDef.hingeOffsetX ?? 4;
+    const isLeft = state.handleSide === "left";
+    const hingeX = isLeft ? panelWidth - hW - hingeOffsetX : hingeOffsetX;
 
-          for (let i = 0; i < 2; i++) {
-            const y = startY + i * gap;
+    const internalFinishData =
+      finishOptions.find(f => f.name === state.selectedInternalFinish) || {
+        color: "#000",
+      };
+    const tintedHinge = tintImage(hingeImg, internalFinishData.color);
 
-            // 1. Draw tinted base
-            finalCtx.drawImage(tintedHinge, hingeX, y, hW, hH);
+    for (let i = 0; i < hingeCount; i++) {
+      const y = startY + i * (hH + hingeGap);
 
-            // 2. Multiply original hinge on top
-            finalCtx.globalCompositeOperation = "overlay";
-            finalCtx.drawImage(hingeImg, hingeX, y, hW, hH);
-            finalCtx.globalCompositeOperation = "source-over";
-          }
-        }
-      }
+      // 1. Draw tinted base
+      finalCtx.drawImage(tintedHinge, hingeX, y, hW, hH);
+
+      // 2. Multiply original hinge on top
+      finalCtx.globalCompositeOperation = "overlay";
+      finalCtx.drawImage(hingeImg, hingeX, y, hW, hH);
+      finalCtx.globalCompositeOperation = "source-over";
+    }
+  }
+}
+
     }
   }
 
@@ -1169,19 +1180,33 @@ async function buildFanlightComposite(targetWidth, targetHeight, frameFinish, fi
   finalCtx.drawImage(frameCanvas, 0, 0);
 
   // 4. Glazing
-  const glazeId = state.selectedSidescreenGlazing || "clear";
-  const glazeDef = sidescreenGlazingDefs.find((g) => g.id === glazeId);
-  if (glazeDef && glazeDef.image) {
-    const glazeImg = await loadImage(getImageURL(glazeDef.image));
-    if (glazeImg) {
-      const margin = glazeDef.margin ?? 35;
-      const gx = margin;
-      const gy = margin;
-      const gw = targetWidth - 2 * margin;
-      const gh = targetHeight - 2 * margin;
-      finalCtx.drawImage(glazeImg, gx, gy, gw, gh);
-    }
+// 4. Glazing (rotated for fanlight)
+const glazeId = state.selectedSidescreenGlazing || "clear";
+const glazeDef = sidescreenGlazingDefs.find((g) => g.id === glazeId);
+if (glazeDef && glazeDef.image) {
+  const glazeImg = await loadImage(getImageURL(glazeDef.image));
+  if (glazeImg) {
+    const margin = glazeDef.margin ?? 35;
+    const gx = margin;
+    const gy = margin;
+    const gw = targetWidth - 2 * margin;
+    const gh = targetHeight - 2 * margin;
+
+    // Create offscreen canvas to rotate
+    const rotatedCanvas = document.createElement("canvas");
+    rotatedCanvas.width = glazeImg.height;
+    rotatedCanvas.height = glazeImg.width;
+    const rctx = rotatedCanvas.getContext("2d");
+
+    // Rotate 90 degrees clockwise
+    rctx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+    rctx.rotate(Math.PI / 2);
+    rctx.drawImage(glazeImg, -glazeImg.width / 2, -glazeImg.height / 2);
+
+    // Draw rotated image onto fanlight (scaled to fit glazing area)
+    finalCtx.drawImage(rotatedCanvas, gx, gy, gw, gh);
   }
+}
 
   return finalCanvas;
 }
@@ -1216,9 +1241,14 @@ async function updateCanvasPreview() {
     const sidescreenDims = getSidescreenDimensionsFromInput();
     const leftWidth = sidescreenDims.left.displayPixels;
     const rightWidth = sidescreenDims.right.displayPixels;
-    const fanlightHeight = parseInt(
-      document.getElementById("fanLightHeightInput")?.value || 350
-    );
+
+const mmToPx = 600 / 1980; // Matches door/sidescreen scale
+
+const fanlightHeightMm = parseInt(
+  document.getElementById("fanLightHeightInput")?.value || 350
+);
+
+const fanlightHeight = Math.round(fanlightHeightMm * mmToPx);
 
     const finishKey =
     state.currentView === "external"
@@ -1402,140 +1432,124 @@ function compositeAndSaveVisualiser() {
    Export Summary
    ---------------------------------------------
 */
-
 async function exportSummary() {
-  const previewCanvas = document.getElementById("previewCanvas");
-  if (!previewCanvas) {
-    console.error("Preview canvas not found");
-    return;
-  }
-
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "pt",
-    format: [595.276, 841.89] // A4 size in points
+    format: [841.89, 595.276] // A4 landscape in points
   });
 
   const exportWidth = 595.276;
   const exportHeight = 841.89;
-  const margin = 40;
-  const imageMaxHeight = exportHeight / 2;
+  const previewCanvas = document.getElementById("previewCanvas");
+  if (!previewCanvas) return;
 
-  // Force external view
   const originalView = state.currentView;
-  state.currentView = "external";
-  updateCanvasPreview();
 
-  setTimeout(() => {
-    const jpegData = previewCanvas.toDataURL("image/jpeg", 0.95);
-
-    // Scale and position image
-    const scale = Math.min(
-      (exportWidth - 2 * margin) / previewCanvas.width,
-      imageMaxHeight / previewCanvas.height
-    );
-    const scaledWidth = previewCanvas.width * scale;
-    const scaledHeight = previewCanvas.height * scale;
-    const imageX = (exportWidth - scaledWidth) / 2;
-    const imageY = 80;
-
-    // Header
-    pdf.setFont("Helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.text("Summary", margin, 40);
-
-    pdf.setDrawColor(180);
-    pdf.setLineWidth(1);
-    pdf.line(margin, 50, exportWidth - margin, 50);
-
-    // Door preview image
-    pdf.addImage(jpegData, "JPEG", imageX, imageY, scaledWidth, scaledHeight);
-
-    // Line below image
-    const lineY = imageY + scaledHeight + 30;
-    pdf.setDrawColor(180);
-    pdf.setLineWidth(1);
-    pdf.line(margin, lineY, exportWidth - margin, lineY);
-
-    // Gather and format data
-    const configObj = configurations.find(c => c.value === state.selectedConfiguration);
-    const configurationName = configObj?.name || state.selectedConfiguration || "Configuration";
-
-    const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
-    const rawStyle = state.selectedStyle || "door";
-    const styleName = toTitleCase(styleDisplayNames?.[rawStyle] || rawStyle);
-    const glazingName = toTitleCase(glazingDisplayNames?.[state.selectedGlazing] || state.selectedGlazing || "glass");
-    const sidescreenStyle = toTitleCase(state.selectedSidescreenStyle || "None");
-    const sidescreenGlazing = toTitleCase(state.selectedSidescreenGlazing || "None");
-    const externalColour = toTitleCase(state.selectedExternalFinish || "colour");
-    const internalColour = toTitleCase(state.selectedInternalFinish || "colour");
-    const hardwareColour = toTitleCase(state.selectedHardwareColor || "colour");
-
-    let originalLetterplateKey = "none";
-    if (styleObj && state.selectedLetterplate) {
-      const entry = Object.entries(styleObj.letterplateOptions || {}).find(
-        ([key, val]) => val === state.selectedLetterplate
-      );
-      originalLetterplateKey = entry ? entry[0] : state.selectedLetterplate;
-    }
-
-    const letterplateText = toTitleCase(letterplateDisplayNames?.[originalLetterplateKey] || originalLetterplateKey);
-    const handleText = toTitleCase(handleDisplayNames?.[state.selectedHandle] || state.selectedHandle || "None");
-
-    const summaryItems = [
-      ["Configuration", configurationName],
-      ["Panel", styleName],
-      ["Glazing", glazingName],
-      ["Sidescreen", sidescreenStyle],
-      ["Sidescreen Glazing", sidescreenGlazing],
-      ["External Colour", externalColour],
-      ["Internal Colour", internalColour],
-      ["Hardware Colour", hardwareColour],
-      ["Letterplate", letterplateText],
-      ["Handle", handleText]
-    ];
-
-    let textY = lineY + 30;
-    const labelX = margin;
-    const valueX = labelX + 120;
-
-    for (const [label, value] of summaryItems) {
-      pdf.setFont("Helvetica", "bold");
-      pdf.setFontSize(12);
-      pdf.text(`${label}:`, labelX, textY);
-
-      pdf.setFont("Helvetica", "normal");
-      pdf.text(value, valueX, textY);
-      textY += 20;
-    }
-
-    // Footer with time on right
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    const dateTime = `${dd}-${mm}-${yyyy} | ${hh}:${min}`;
-
-    pdf.setDrawColor(180);
-    pdf.setLineWidth(1);
-    pdf.line(margin, exportHeight - 60, exportWidth - margin, exportHeight - 60);
-
-    pdf.setFontSize(10);
-    pdf.setTextColor(100);
-    pdf.text(dateTime, exportWidth - margin, exportHeight - 30, { align: "right" });
-
-    // Save file
-    const fileName = `Export Summary - ${styleName} - ${dd}-${mm}-${yyyy} at ${hh}.${min}.pdf`;
-    pdf.save(fileName.replace(/[\/\\?%*:|"<>]/g, "-"));
-
-    state.currentView = originalView;
+  const captureViewImage = async (view) => {
+    state.currentView = view;
     updateCanvasPreview();
-  }, 100);
+    await new Promise(r => setTimeout(r, 50));
+    return previewCanvas.toDataURL("image/jpeg", 0.95);
+  };
+
+  const externalImg = await captureViewImage("external");
+  const internalImg = await captureViewImage("internal");
+
+  const imageMaxWidth = (exportWidth - 80) / 2;
+  const imageMaxHeight = exportHeight / 2 - 60;
+  const scale = 0.8 * Math.min(
+    imageMaxWidth / previewCanvas.width,
+    imageMaxHeight / previewCanvas.height
+  );
+  const scaledWidth = previewCanvas.width * scale;
+  const scaledHeight = previewCanvas.height * scale;
+
+  const imageY = 130; // Adjusted to make room for labels
+  const imageGap = 20;
+  const totalImageWidth = scaledWidth * 2 + imageGap;
+  const startX = (exportWidth - totalImageWidth) / 2;
+  const extX = startX;
+  const intX = extX + scaledWidth + imageGap;
+
+  // Header: "Summary"
+  pdf.setFont("Helvetica", "bold");
+  pdf.setFontSize(14);
+  pdf.text("Summary", 40, 40);
+
+  // Background behind images
+  const bgTop = imageY - 30;
+  const bgHeight = scaledHeight + 60;
+  const bgX = 40;
+  const bgWidth = exportWidth - 80;
+  pdf.setFillColor(210); // darker grey
+  pdf.rect(bgX, bgTop, bgWidth, bgHeight, "F");
+
+  // Image labels
+  pdf.setFont("Helvetica", "bold");
+  pdf.setFontSize(12);
+  pdf.text("External", extX + scaledWidth / 2, imageY - 10, { align: "center" });
+  pdf.text("Internal", intX + scaledWidth / 2, imageY - 10, { align: "center" });
+
+  // Door images
+  pdf.addImage(externalImg, "JPEG", extX, imageY, scaledWidth, scaledHeight);
+  pdf.addImage(internalImg, "JPEG", intX, imageY, scaledWidth, scaledHeight);
+
+  // Summary text
+  const labelX = 40;
+  const valueX = 170;
+  let textY = imageY + scaledHeight + 50;
+
+  let originalLetterplateKey = "none";
+const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
+
+if (styleObj && state.selectedLetterplate) {
+  const entry = Object.entries(styleObj.letterplateOptions || {}).find(
+    ([key, val]) => val === state.selectedLetterplate
+  );
+  originalLetterplateKey = entry ? entry[0] : state.selectedLetterplate;
 }
 
+const letterplateText = toTitleCase(
+  letterplateDisplayNames?.[originalLetterplateKey] || originalLetterplateKey
+);
+
+  const summaryItems = [
+    ["Configuration", state.selectedConfiguration],
+    ["Panel", state.selectedStyle],
+    ["Glazing", state.selectedGlazing],
+    ["Sidescreen", state.selectedSidescreenStyle],
+    ["Sidescreen Glazing", state.selectedSidescreenGlazing],
+    ["External Colour", state.selectedExternalFinish],
+    ["Internal Colour", state.selectedInternalFinish],
+    ["Hardware Colour", state.selectedHardwareColor],
+    ["Letterplate", letterplateText],
+    ["Handle", state.selectedHandle]
+  ];
+
+  for (const [label, value] of summaryItems) {
+    pdf.setFont("Helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.text(`${label}:`, labelX, textY);
+    pdf.setFont("Helvetica", "normal");
+    pdf.text(toTitleCase(value || "None"), valueX, textY);
+    textY += 20;
+  }
+
+  // Footer
+  const now = new Date();
+  const dateTime = `${now.toLocaleDateString()} | ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+  pdf.setFontSize(10);
+  pdf.setTextColor(100);
+  pdf.text(dateTime, exportWidth - 40, exportHeight - 20, { align: "right" });
+
+  pdf.save("Design Summary.pdf");
+
+  // Restore original view
+  state.currentView = originalView;
+  updateCanvasPreview();
+}
 /*
    ---------------------------------------------
    Handling Thumbnail Clicks
