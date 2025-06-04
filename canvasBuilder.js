@@ -1421,27 +1421,32 @@ async function exportSummary() {
   const exportHeight = 841.89;
   const imageMaxHeight = exportHeight / 2;
 
-  // Re-render external view
+  // Force external view
   const originalView = state.currentView;
   state.currentView = "external";
   updateCanvasPreview();
 
   setTimeout(() => {
+    // Draw the canvas image
     const scale = Math.min(
       exportWidth / previewCanvas.width,
       imageMaxHeight / previewCanvas.height
     );
     const scaledWidth = previewCanvas.width * scale;
     const scaledHeight = previewCanvas.height * scale;
-
     const imageX = (exportWidth - scaledWidth) / 2;
     const imageY = 20;
 
-    // Convert canvas to image
     const jpegData = previewCanvas.toDataURL("image/jpeg", 0.95);
     pdf.addImage(jpegData, "JPEG", imageX, imageY, scaledWidth, scaledHeight);
 
-    // Generate text content
+    // Line between image and text
+    const lineY = imageY + scaledHeight + 30;
+    pdf.setDrawColor(180);
+    pdf.setLineWidth(1);
+    pdf.line(40, lineY, exportWidth - 40, lineY);
+
+    // Gather and format data
     const configObj = configurations.find(c => c.value === state.selectedConfiguration);
     const configurationName = configObj?.name || state.selectedConfiguration || "Configuration";
 
@@ -1462,31 +1467,38 @@ async function exportSummary() {
       );
       originalLetterplateKey = entry ? entry[0] : state.selectedLetterplate;
     }
+
     const letterplateText = toTitleCase(letterplateDisplayNames?.[originalLetterplateKey] || originalLetterplateKey);
     const handleText = toTitleCase(handleDisplayNames?.[state.selectedHandle] || state.selectedHandle || "None");
 
-    const summaryLines = [
-      `Configuration: ${configurationName}`,
-      `Panel: ${styleName}`,
-      `Glazing: ${glazingName}`,
-      `Sidescreen: ${sidescreenStyle}`,
-      `Sidescreen Glazing: ${sidescreenGlazing}`,
-      `External Colour: ${externalColour}`,
-      `Internal Colour: ${internalColour}`,
-      `Hardware Colour: ${hardwareColour}`,
-      `Letterplate: ${letterplateText}`,
-      `Handle: ${handleText}`
+    const summaryItems = [
+      ["Configuration", configurationName],
+      ["Panel", styleName],
+      ["Glazing", glazingName],
+      ["Sidescreen", sidescreenStyle],
+      ["Sidescreen Glazing", sidescreenGlazing],
+      ["External Colour", externalColour],
+      ["Internal Colour", internalColour],
+      ["Hardware Colour", hardwareColour],
+      ["Letterplate", letterplateText],
+      ["Handle", handleText]
     ];
 
-    let textY = imageY + scaledHeight + 40;
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
-    for (let line of summaryLines) {
-      pdf.text(line, 40, textY);
+    let textY = lineY + 30;
+    const labelX = 40;
+    const valueX = 160;
+
+    for (const [label, value] of summaryItems) {
+      pdf.setFont("Helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text(`${label}:`, labelX, textY);
+
+      pdf.setFont("Helvetica", "normal");
+      pdf.text(value, valueX, textY);
       textY += 20;
     }
 
-    // Footer with timestamp
+    // Footer
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -1498,10 +1510,11 @@ async function exportSummary() {
     pdf.setTextColor(100);
     pdf.text(dateTime, 40, exportHeight - 30);
 
-    // File name and save
+    // Save file
     const fileName = `Export Summary - ${styleName} - ${dd}-${mm}-${yyyy} at ${hh}.${min}.pdf`;
     pdf.save(fileName.replace(/[\/\\?%*:|"<>]/g, "-"));
 
+    // Restore original view
     state.currentView = originalView;
     updateCanvasPreview();
   }, 100);
