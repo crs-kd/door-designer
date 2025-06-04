@@ -1403,7 +1403,7 @@ function compositeAndSaveVisualiser() {
    ---------------------------------------------
 */
 
-async function exportSummaryToPDF() {
+async function exportSummary() {
   const previewCanvas = document.getElementById("previewCanvas");
   if (!previewCanvas) {
     console.error("Preview canvas not found");
