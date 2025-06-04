@@ -38,6 +38,11 @@ function showStep(index) {
   document.querySelectorAll(".step").forEach(s => s.classList.remove("step-active"));
   const activeStep = document.getElementById(stepIDs[index]);
   if (activeStep) activeStep.classList.add("step-active");
+
+  // Scroll thumbnail menu to top
+  const thumbContainer = document.querySelector(".thumbnail-container");
+  if (thumbContainer) thumbContainer.scrollTop = 0;
+
   updateStepMenu(index);
 }
 
@@ -74,8 +79,38 @@ export {
   updateStepMenuAccessibility,
   isStepAccessible
 }
-document.getElementById("doorWidthInput").addEventListener("change", updateCanvasPreview);
-document.getElementById("doorHeightInput").addEventListener("change", updateCanvasPreview);
+function validateDoorDimensionInput(inputId, dimensionType) {
+  const input = document.getElementById(inputId);
+  input.addEventListener("change", () => {
+    const style = doorStyles.find((s) => s.name === state.selectedStyle);
+    if (!style) return;
+
+    const min = dimensionType === "width" ? style.minWidth : style.minHeight;
+    const max = dimensionType === "width" ? style.maxWidth : style.maxHeight;
+
+    let value = parseInt(input.value);
+    if (isNaN(value)) return;
+
+    // Clamp to nearest limit if out of bounds
+    if (value < min) value = min;
+    if (value > max) value = max;
+
+    input.value = value; // update visible input box
+    updateCanvasPreview();
+  });
+}
+
+["doorWidthInput", "doorHeightInput"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener("change", () => {
+      updateCanvasPreview();
+    });
+  }
+});
+
+validateDoorDimensionInput("doorWidthInput", "width");
+validateDoorDimensionInput("doorHeightInput", "height");
 document.getElementById("leftSidescreenWidthInput").addEventListener("change", updateCanvasPreview);
 document.getElementById("rightSidescreenWidthInput").addEventListener("change", updateCanvasPreview);
 document.getElementById("fanLightHeightInput")?.addEventListener("change", updateCanvasPreview);

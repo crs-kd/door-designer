@@ -17,8 +17,6 @@ import { populateConfigurationOptions } from "./ui.js";
 import { populateStylesByRange } from "./ui.js";
 import { populateExternalFinishThumbnails } from "./ui.js";
 import { populateInternalFinishThumbnails } from "./ui.js";
-import { populateExternalFrameFinishThumbnails } from "./ui.js";
-import { populateInternalFrameFinishThumbnails } from "./ui.js";
 import { populateGlazingThumbnails } from "./ui.js";
 import { populateLetterplateThumbnails } from "./ui.js";
 import { populateHardwareColorThumbnails } from "./ui.js";
@@ -33,8 +31,6 @@ import { updateNavigationControls } from "./main.js";
 
 import { doorStyles } from "./data.js";
 import { finishOptions } from "./data.js";
-import { glazingDisplayNames } from "./data.js";
-import { styleDisplayNames } from "./data.js";
 import { hardwareColorMap } from "./data.js";
 import { glazingDefs } from "./data.js";
 import { letterplateDefs } from "./data.js";
@@ -58,6 +54,13 @@ import {
   updateDoorOverlay,
   initializeDoorOverlay,
 } from "./visualiser.js";
+
+import {
+  styleDisplayNames,
+  glazingDisplayNames,
+  letterplateDisplayNames,
+  handleDisplayNames
+} from "./data.js";
 
 async function drawPanelElement(ctx, rect, options) {
   const img = await loadImage(options.imageURL);
@@ -1187,6 +1190,8 @@ async function buildFanlightComposite(targetWidth, targetHeight, frameFinish, fi
    updateCanvasPreview()
    ---------------------------------------------
 */
+
+
 function parseConfigurationFlags(configValue) {
   return {
     hasLeft: configValue.includes("left"),
@@ -1343,8 +1348,29 @@ async function updateCanvasPreview() {
    letting the user download the result.
 */
 function compositeAndSaveVisualiser() {
-  const styleName = state.selectedStyle || "door";
-  const safeFileName = `${styleName}-visual.png`.replace(/[\/\\?%*:|"<>]/g, "-");
+  const rawStyle = state.selectedStyle || "door";
+  const styleName = toTitleCase(
+    (typeof styleDisplayNames !== "undefined" && styleDisplayNames[rawStyle]) || rawStyle
+  );
+
+  const glazingName = toTitleCase(
+    (typeof glazingDisplayNames !== "undefined" && glazingDisplayNames[state.selectedGlazing]) || state.selectedGlazing || "glass"
+  );
+
+  const externalColour = toTitleCase(state.selectedExternalFinish || "colour");
+
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+
+  const datePart = `${dd}-${mm}-${yyyy}`;
+  const timePart = `${hh}.${min}`;
+
+  let fileName = `Visual of a ${styleName} panel with ${glazingName} glazing in ${externalColour} created on ${datePart} at ${timePart}.png`;
+  fileName = fileName.replace(/[\/\\?%*:|"<>]/g, "-");
 
   const visualiserContent = document.getElementById("visualiserContent");
   const w = visualiserContent.clientWidth;
@@ -1364,10 +1390,156 @@ function compositeAndSaveVisualiser() {
   const dataURL = compositeCanvas.toDataURL("image/png");
   const link = document.createElement("a");
   link.href = dataURL;
-  link.download = safeFileName;
+  link.download = fileName;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+/*
+   ---------------------------------------------
+   Export Summary
+   ---------------------------------------------
+*/
+
+function wrapText(text, maxCharsPerLine) {
+  const words = text.split(" ");
+  const lines = [];
+  let currentLine = "";
+
+  for (let word of words) {
+    if ((currentLine + word).length <= maxCharsPerLine) {
+      currentLine += word + " ";
+    } else {
+      lines.push(currentLine.trim());
+      currentLine = word + " ";
+    }
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine.trim());
+  }
+
+  return lines;
+}
+
+function exportSummary() {
+  const previewCanvas = document.getElementById("previewCanvas");
+  if (!previewCanvas) {
+    console.error("Preview canvas not found");
+    return;
+  }
+
+  const originalView = state.currentView;
+  state.currentView = "external";
+  updateCanvasPreview();
+
+  setTimeout(() => {
+    const exportWidth = 595.276;
+    const exportHeight = 841.89;
+    const imageMaxHeight = exportHeight / 2;
+
+    const compositeCanvas = document.createElement("canvas");
+    compositeCanvas.width = exportWidth;
+    compositeCanvas.height = exportHeight;
+
+    const ctx = compositeCanvas.getContext("2d");
+    ctx.fillStyle = "#fff"; // White background
+    ctx.fillRect(0, 0, exportWidth, exportHeight);
+
+    // Scale the door preview image
+    const scale = Math.min(
+      exportWidth / previewCanvas.width,
+      imageMaxHeight / previewCanvas.height
+    );
+    const scaledWidth = previewCanvas.width * scale;
+    const scaledHeight = previewCanvas.height * scale;
+    const imageX = (exportWidth - scaledWidth) / 2;
+    const imageY = 20;
+
+    ctx.drawImage(previewCanvas, imageX, imageY, scaledWidth, scaledHeight);
+
+    // --- Summary Text ---
+    const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
+    const rawStyle = state.selectedStyle || "door";
+    const styleName = toTitleCase(styleDisplayNames?.[rawStyle] || rawStyle);
+    const glazingName = toTitleCase(glazingDisplayNames?.[state.selectedGlazing] || state.selectedGlazing || "glass");
+    const externalColour = toTitleCase(state.selectedExternalFinish || "colour");
+    const internalColour = toTitleCase(state.selectedInternalFinish || "colour");
+    const hardwareColour = toTitleCase(state.selectedHardwareColor || "colour");
+
+    let originalLetterplateKey = "none";
+    if (styleObj && state.selectedLetterplate) {
+      const entry = Object.entries(styleObj.letterplateOptions || {}).find(
+        ([key, val]) => val === state.selectedLetterplate
+      );
+      originalLetterplateKey = entry ? entry[0] : state.selectedLetterplate;
+    }
+
+    const letterplateText = toTitleCase(letterplateDisplayNames?.[originalLetterplateKey] || originalLetterplateKey);
+    const handleText = toTitleCase(handleDisplayNames?.[state.selectedHandle] || state.selectedHandle || "None");
+
+ctx.fillStyle = "#000";
+ctx.font = "14px sans-serif";
+ctx.textAlign = "left";
+
+// Draw separator line
+const lineY = imageY + scaledHeight + 40;
+ctx.beginPath();
+ctx.moveTo(20, lineY);
+ctx.lineTo(exportWidth - 20, lineY);
+ctx.lineWidth = 1;
+ctx.strokeStyle = "#ccc";
+ctx.stroke();
+
+// Summary lines (label + value)
+const summaryItems = [
+  ["Style", styleName],
+  ["Glazing", glazingName],
+  ["External Colour", externalColour],
+  ["Internal Colour", internalColour],
+  ["Hardware Colour", hardwareColour],
+  ["Letterplate", letterplateText],
+  ["Handle", handleText]
+];
+
+// Calculate max label width
+ctx.font = "bold 14px sans-serif";
+const labelWidths = summaryItems.map(([label]) => ctx.measureText(`${label}:`).width);
+const labelX = 20;
+const valueX = labelX + Math.max(...labelWidths) + 10; // 10px padding
+
+let textY = lineY + 30;
+for (const [label, value] of summaryItems) {
+  ctx.font = "bold 14px sans-serif";
+  ctx.fillText(`${label}:`, labelX, textY);
+  ctx.font = "14px sans-serif";
+  ctx.fillText(value, valueX, textY);
+  textY += 24;
+}
+    // File name and save
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const datePart = `${dd}-${mm}-${yyyy}`;
+    const timePart = `${hh}.${min}`;
+    let fileName = `Export Summary - ${styleName} - ${datePart} at ${timePart}.jpg`;
+    fileName = fileName.replace(/[\/\\?%*:|"<>]/g, "-");
+
+    const dataURL = compositeCanvas.toDataURL("image/jpeg", 0.95); // JPEG with white background
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    state.currentView = originalView;
+    updateCanvasPreview();
+  }, 100);
 }
 
 /*
@@ -1486,28 +1658,6 @@ function addThumbnailClick(type) {
             state.selectedSidescreenStyle = value;
             break;
 
-          case "finish":
-            state.selectedExternalFinish = value;
-            state.currentView = "external";
-            updateViewIndicator();
-            state.selectedInternalFinish = "Brilliant White"; // reset on external change
-            populateInternalFinishThumbnails();
-            break;
-
-          case "internalFinish":
-            state.selectedInternalFinish = value;
-            state.currentView = "internal";
-            updateViewIndicator();
-            break;
-
-          case "externalFrameFinish":
-            state.selectedExternalFrameFinish = value;
-            break;
-
-          case "internalFrameFinish":
-            state.selectedInternalFrameFinish = value;
-            break;
-
           case "glazing":
             state.selectedGlazing = value;
             break;
@@ -1527,6 +1677,27 @@ function addThumbnailClick(type) {
           case "sidescreenGlazing":
             state.selectedSidescreenGlazing = value;
             break;
+
+case "externalColour":
+  state.selectedExternalFinish = value;
+  state.selectedExternalFrameFinish = value;
+  state.currentView = "external";
+  updateViewIndicator();
+
+  // 🔁 Force internal colour to white
+  state.selectedInternalFinish = "Brilliant White";
+  state.selectedInternalFrameFinish = "Brilliant White";
+
+  populateInternalFinishThumbnails();
+  markSelected("internalColour", "Brilliant White"); // optional: visually highlight it
+  break;
+
+case "internalColour":
+  state.selectedInternalFinish = value;
+  state.selectedInternalFrameFinish = value;
+  state.currentView = "internal";
+  updateViewIndicator();
+  break;
         }
 
         markSelected(type, value);
@@ -1627,8 +1798,6 @@ document.addEventListener("DOMContentLoaded", () => {
   populateSidescreenStyleThumbnails();
   populateExternalFinishThumbnails();
   populateInternalFinishThumbnails();
-  populateExternalFrameFinishThumbnails();
-  populateInternalFrameFinishThumbnails();
   populateGlazingThumbnails();
   populateHardwareColorThumbnails();
   populateHandleThumbnails();
@@ -1693,6 +1862,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("saveMockupBtn").addEventListener("click", () => {
     compositeAndSaveVisualiser();
   });
+    document.getElementById("exportSummaryBtn").addEventListener("click", () => {
+    exportSummary();
+  });
 
   // document.getElementById("opacityToggleBtn").addEventListener("click", () => {
   //   state.glazingObscureEnabled = !state.glazingObscureEnabled;
@@ -1729,6 +1901,12 @@ document.addEventListener("DOMContentLoaded", () => {
   updateConfigurationOptionVisibility();
 });
 
+function toTitleCase(str) {
+  return str
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
 function compositeAndSave() {
   try {
     const previewCanvas = document.getElementById("previewCanvas");
@@ -1737,19 +1915,39 @@ function compositeAndSave() {
       return;
     }
 
-    // Flip for internal view
     if (state.currentView === "internal") {
       mirrorCanvas(previewCanvas);
     }
 
-    const styleName = state.selectedStyle || "door";
+    // Graceful fallback for missing mappings
+    const rawStyle = state.selectedStyle || "door";
+    const styleName = toTitleCase(
+      (typeof styleDisplayNames !== "undefined" && styleDisplayNames[rawStyle]) || rawStyle
+    );
 
-    const safeFileName = `${styleName}.png`.replace(/[\/\\?%*:|"<>]/g, "-");
+    const glazingName = toTitleCase(
+      (typeof glazingDisplayNames !== "undefined" && glazingDisplayNames[state.selectedGlazing]) || state.selectedGlazing || "glass"
+    );
+
+    const externalColour = toTitleCase(state.selectedExternalFinish || "colour");
+
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+
+    const datePart = `${dd}-${mm}-${yyyy}`;
+    const timePart = `${hh}.${min}`;
+
+    let fileName = `${styleName} panel with ${glazingName} glazing in ${externalColour} created on ${datePart} at ${timePart}.png`;
+    fileName = fileName.replace(/[\/\\?%*:|"<>]/g, "-");
 
     const dataURL = previewCanvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.href = dataURL;
-    link.download = safeFileName;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1757,12 +1955,12 @@ function compositeAndSave() {
     console.error("Error in compositeAndSave:", err);
   }
 }
-
 export {
   buildPanelComposite,
   buildSidePanelComposite,
   updateCanvasPreview,
   compositeAndSave,
+  exportSummary,
   addThumbnailClick,
   markSelected,
 };

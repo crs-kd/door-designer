@@ -309,7 +309,7 @@
       /* Panel 3: Preview Container */
       .preview-container {
         flex: 1;
-        background-color: #f5f7fa;
+        background-color: #e4e5e7;
         display: flex;
         flex-direction: column;
         position: relative;
@@ -481,7 +481,7 @@
           <span data-index="0" class="step-menu-item">Configuration</span>
           <span data-index="1"class="step-menu-item hidden" id="sidescreenMenuItem">Sidescreen</span>
           <span data-index="2" class="step-menu-item">Style</span>
-          <span data-index="3" class="step-menu-item">Finish</span>
+          <span data-index="3" class="step-menu-item">Colour</span>
           <span data-index="4" class="step-menu-item">Glazing</span>
           <span data-index="5" class="step-menu-item">Hardware</span>
         </div>
@@ -498,9 +498,9 @@
               type="number"
               id="doorWidthInput"
               step="1"
-              value="875"
-              max="1000"
-              min="700"
+              value="900"
+              max="5000"
+              min="0"
             />
           </div>
           <div class="size-input">
@@ -509,9 +509,9 @@
               type="number"
               id="doorHeightInput"
               step="1"
-              value="1920"
-              max="2100"
-              min="1750"
+              value="2100"
+              max="5000"
+              min="0"
             />
           </div>
         </div>
@@ -582,12 +582,6 @@
           <div class="finish-group">
             <div class="grid-container" id="internal-finish-list"></div>
           </div>
-          <div class="finish-group">
-            <div class="grid-container" id="frame-external-finish-list"></div>
-          </div>
-          <div class="finish-group">
-            <div class="grid-container" id="frame-internal-finish-list"></div>
-          </div>
         </div>
         <!-- Step 4: Glazing -->
         <div id="glazing-step" class="step">
@@ -643,6 +637,14 @@
               <i class="fa-solid fa-floppy-disk"></i>
             </button>
             <label for="saveDesignBtn">Save Design</label>
+
+            <span class="icon-spacer"> </span>
+
+            <button id="exportSummaryBtn">
+            <i class="fa-solid fa-file"></i>
+            </button>
+            <label for="exportSummaryBtn">Export Summary</label>
+
           </div>
         </div>
 

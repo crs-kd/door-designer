@@ -101,6 +101,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -159,6 +162,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
 
 
@@ -201,6 +207,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -241,6 +250,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -281,6 +293,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -321,6 +336,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -363,6 +381,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -403,6 +424,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -462,6 +486,9 @@ const doorStyles = [
       "murano",
       "satin",
       "virtue",
+            "digital",
+      "contora",
+      "charcoal",
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
@@ -479,9 +506,6 @@ const configurations = [
   { value: "single-right", name: "Right Sidescreen" },
   { value: "single-left-right", name: "Left & Right Sidescreens" },
   { value: "single-fanlight", name: "Single Door + Fanlight" },
-  { value: "single-left-fanlight", name: "Left Sidescreen + Fanlight" },
-  { value: "single-right-fanlight", name: "Right Sidescreen + Fanlight" },
-  { value: "single-left-right-fanlight", name: "Both Sidescreens + Fanlight" },
 
   // Full-height sidescreens
   { value: "single-leftfull-fanlight", name: "Left Sidescreen Full Height + Fanlight" },
@@ -514,7 +538,7 @@ const finishOptions = [
   {
     name: "Rosewood",
     displayName: "Rosewood",
-    color: "rgb(84, 37, 33)",
+    color: "rgb(45, 21, 19)",
     texture: getImageURL("woodgrain"),
     textureBlend: "overlay",
     ranges: ["Lorimer", "Allure","Timberluxe"]
@@ -1840,7 +1864,7 @@ const letterplateDisplayNames = {
   "letterplate-none": "None",
   "letterplate-mid": "Mid",
   "letterplate-low": "Low",
-  "letterplate-btm": "btm",
+  "letterplate-btm": "Bottom",
 };
 
 const hardwareColorOptions = ["gold", "black", "chrome", "graphite"];

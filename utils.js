@@ -90,18 +90,30 @@ function getClampedSize(inputWidth, inputHeight, minW, maxW, minH, maxH) {
 }
 
 function getDoorPanelDimensionsFromInput() {
-  const widthInput = parseInt(document.getElementById("doorWidthInput").value);
-  const heightInput = parseInt(document.getElementById("doorHeightInput").value);
+  const widthInputEl = document.getElementById("doorWidthInput");
+  const heightInputEl = document.getElementById("doorHeightInput");
+
+  let widthInput = parseInt(widthInputEl.value);
+  let heightInput = parseInt(heightInputEl.value);
+
   const style = state.selectedStyle;
   const styleObj = doorStyles.find(s => s.name === style);
   const minW = styleObj?.minWidth || 600;
   const maxW = styleObj?.maxWidth || 1200;
   const minH = styleObj?.minHeight || 1800;
   const maxH = styleObj?.maxHeight || 2200;
-  const clamped = getClampedSize(widthInput, heightInput, minW, maxW, minH, maxH);
-  const scaled = getScaledPanelSize(clamped.width, clamped.height);
+
+  // Clamp values
+  widthInput = Math.min(Math.max(widthInput, minW), maxW);
+  heightInput = Math.min(Math.max(heightInput, minH), maxH);
+
+  // Write clamped values back to inputs
+  widthInputEl.value = widthInput;
+  heightInputEl.value = heightInput;
+
+  const scaled = getScaledPanelSize(widthInput, heightInput);
   return {
-    inputMM: clamped,
+    inputMM: { width: widthInput, height: heightInput },
     displayPixels: { width: scaled.width, height: scaled.height },
     scaleFactor: scaled.scaleFactor
   };

@@ -24,18 +24,45 @@ import {
    Summary & UI
    ---------------------------------------------
 */
+
+function toTitleCase(str) {
+  return str
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
 function updateSummary() {
   const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
-  let styleText = styleObj ? (styleDisplayNames[styleObj.name] || styleObj.name) : "None";
-  let glazingName = glazingDisplayNames[state.selectedGlazing] || state.selectedGlazing;
-  let letterplateText = letterplateDisplayNames[state.selectedLetterplate] || state.selectedLetterplate;
-  let handleText = handleDisplayNames[state.selectedHandle] 
-    ? `${handleDisplayNames[state.selectedHandle]} (${hardwareColorDisplayNames[state.selectedHardwareColor]})`
-    : "None";
+
+  const styleText = toTitleCase(styleObj ? (styleDisplayNames[state.selectedStyle] || state.selectedStyle) : "None");
+  const glazingName = toTitleCase(glazingDisplayNames[state.selectedGlazing] || state.selectedGlazing || "None");
+
+  // Resolve original letterplate key for display name lookup
+  let originalLetterplateKey = "none";
+  if (styleObj && state.selectedLetterplate) {
+    const entry = Object.entries(styleObj.letterplateOptions || {}).find(
+      ([key, val]) => val === state.selectedLetterplate
+    );
+    originalLetterplateKey = entry ? entry[0] : state.selectedLetterplate;
+  }
+
+  const letterplateText = toTitleCase(
+    letterplateDisplayNames[originalLetterplateKey] || originalLetterplateKey
+  );
+
+  const handleText = toTitleCase(
+    handleDisplayNames[state.selectedHandle] || state.selectedHandle || "None"
+  );
+
+  const externalColour = toTitleCase(state.selectedExternalFinish || "None");
+  const internalColour = toTitleCase(state.selectedInternalFinish || "None");
+  const hardwareColour = toTitleCase(state.selectedHardwareColor || "None");
 
   document.getElementById("summary").innerHTML =
     `<strong>Style:</strong> ${styleText} | ` +
     `<strong>Glazing:</strong> ${glazingName} | ` +
+    `<strong>External Colour:</strong> ${externalColour} | ` +
+    `<strong>Internal Colour:</strong> ${internalColour} | ` +
+    `<strong>Hardware Colour:</strong> ${hardwareColour} | ` +
     `<strong>Letterplate:</strong> ${letterplateText} | ` +
     `<strong>Handle:</strong> ${handleText}`;
 }
@@ -145,14 +172,14 @@ function populateExternalFinishThumbnails() {
   const filteredFinishes = finishOptions.filter(f => f.ranges.includes(selectedRange));
 
   const html = filteredFinishes.map(f => `
-    <div class="thumbnail" data-type="finish" data-value="${f.name}">
+    <div class="thumbnail" data-type="externalColour" data-value="${f.name}">
       <img src="${getImageURL(f.name + "-thumb")}" alt="${f.displayName}">
       <p>${f.displayName}</p>
     </div>
   `).join("");
 
-  container.innerHTML = `<h3>External Finishes</h3>${html}`;
-  addThumbnailClick("finish");
+  container.innerHTML = `<h3>External Colour</h3>${html}`;
+  addThumbnailClick("externalColour");
 }
 
 function populateInternalFinishThumbnails() {
@@ -163,49 +190,16 @@ function populateInternalFinishThumbnails() {
   const html = finishOptions
     .filter(f => allowedInternals.includes(f.name))
     .map(f => `
-      <div class="thumbnail" data-type="internalFinish" data-value="${f.name}">
+      <div class="thumbnail" data-type="internalColour" data-value="${f.name}">
         <img src="${getImageURL(f.name + "-thumb")}" alt="${f.displayName}">
         <p>${f.displayName}</p>
       </div>
     `).join("");
 
-  container.innerHTML = `<h3>Internal Finishes</h3>${html}`;
-  addThumbnailClick("internalFinish");
+  container.innerHTML = `<h3>Internal Colour</h3>${html}`;
+  addThumbnailClick("internalColour");
 }
 
-function populateExternalFrameFinishThumbnails() {
-  const container = document.getElementById("frame-external-finish-list");
-  if (!container) return;
-
-  const validOptions = finishOptions.filter(f =>
-    f.ranges.includes(state.selectedRange)
-  );
-
-  const html = validOptions.map(f => `
-    <div class="thumbnail" data-type="externalFrameFinish" data-value="${f.name}">
-      <img src="${getImageURL(f.name + "-thumb")}" alt="${f.displayName}">
-      <p>${f.displayName}</p>
-    </div>
-  `).join("");
-
-  container.innerHTML = `<h3>External Frame Finish</h3>${html}`;
-  addThumbnailClick("externalFrameFinish");
-}
-
-function populateInternalFrameFinishThumbnails() {
-  const container = document.getElementById("frame-internal-finish-list");
-  const allowed = internalFinishMap[state.selectedExternalFrameFinish] || [];
-  const html = finishOptions
-    .filter(f => allowed.includes(f.name))
-    .map(f => `
-      <div class="thumbnail" data-type="internalFrameFinish" data-value="${f.name}">
-        <img src="${getImageURL(f.name + "-thumb")}" alt="${f.displayName}">
-        <p>${f.displayName}</p>
-      </div>
-    `).join("");
-  container.innerHTML = `<h3>Internal Frame Colour</h3>${html}`;
-  addThumbnailClick("internalFrameFinish");
-}
 
 function populateGlazingThumbnails() {
   const container = document.getElementById("glazing-list");
@@ -306,8 +300,6 @@ export {
   populateSidescreenStyleThumbnails,
   populateExternalFinishThumbnails,
   populateInternalFinishThumbnails,
-  populateExternalFrameFinishThumbnails,
-  populateInternalFrameFinishThumbnails,
   populateGlazingThumbnails,
   populateLetterplateThumbnails,
   populateHardwareColorThumbnails,
