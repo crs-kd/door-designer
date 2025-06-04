@@ -1403,7 +1403,6 @@ function compositeAndSaveVisualiser() {
    ---------------------------------------------
 */
 
-
 function wrapText(text, maxCharsPerLine) {
   const words = text.split(" ");
   const lines = [];
@@ -1446,9 +1445,10 @@ function exportSummary() {
     compositeCanvas.height = exportHeight;
 
     const ctx = compositeCanvas.getContext("2d");
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#fff"; // White background
     ctx.fillRect(0, 0, exportWidth, exportHeight);
 
+    // Scale the door preview image
     const scale = Math.min(
       exportWidth / previewCanvas.width,
       imageMaxHeight / previewCanvas.height
@@ -1464,7 +1464,9 @@ function exportSummary() {
     const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
     const rawStyle = state.selectedStyle || "door";
     const styleName = toTitleCase(styleDisplayNames?.[rawStyle] || rawStyle);
+    const configName = configurations.find(c => c.value === state.selectedConfiguration)?.name || "Configuration";
     const glazingName = toTitleCase(glazingDisplayNames?.[state.selectedGlazing] || state.selectedGlazing || "glass");
+    const sidescreenGlazing = toTitleCase(glazingDisplayNames?.[state.selectedSidescreenGlazing] || state.selectedSidescreenGlazing || "glass");
     const externalColour = toTitleCase(state.selectedExternalFinish || "colour");
     const internalColour = toTitleCase(state.selectedInternalFinish || "colour");
     const hardwareColour = toTitleCase(state.selectedHardwareColor || "colour");
@@ -1480,13 +1482,7 @@ function exportSummary() {
     const letterplateText = toTitleCase(letterplateDisplayNames?.[originalLetterplateKey] || originalLetterplateKey);
     const handleText = toTitleCase(handleDisplayNames?.[state.selectedHandle] || state.selectedHandle || "None");
 
-    const configObj = configurations.find(c => c.value === state.selectedConfiguration);
-    const configName = configObj ? configObj.name : "None";
-
-    const sidescreenGlazing = toTitleCase(state.selectedSidescreenGlazing || "None");
-    const sidescreenStyle = toTitleCase(state.selectedSidescreenStyle || "None");
-
-    // Draw separator line
+    // Separator line above summary
     const lineY = imageY + scaledHeight + 40;
     ctx.beginPath();
     ctx.moveTo(20, lineY);
@@ -1495,12 +1491,14 @@ function exportSummary() {
     ctx.strokeStyle = "#ccc";
     ctx.stroke();
 
-    // Summary items
+    // Draw summary text
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "left";
+
     const summaryItems = [
       ["Configuration", configName],
       ["Panel", styleName],
       ["Glazing", glazingName],
-      ["Sidescreen", sidescreenStyle],
       ["Sidescreen Glazing", sidescreenGlazing],
       ["External Colour", externalColour],
       ["Internal Colour", internalColour],
@@ -1509,18 +1507,10 @@ function exportSummary() {
       ["Handle", handleText]
     ];
 
-    // Draw summary items with aligned columns
-    ctx.fillStyle = "#000";
-    ctx.font = "14px sans-serif";
-    ctx.textAlign = "left";
-
-    // Measure label widths for alignment
-    ctx.font = "bold 14px sans-serif";
-    const labelWidths = summaryItems.map(([label]) => ctx.measureText(`${label}:`).width);
     const labelX = 20;
-    const valueX = labelX + Math.max(...labelWidths) + 10;
-
+    const valueX = 170;
     let textY = lineY + 30;
+
     for (const [label, value] of summaryItems) {
       ctx.font = "bold 14px sans-serif";
       ctx.fillText(`${label}:`, labelX, textY);
@@ -1529,7 +1519,17 @@ function exportSummary() {
       textY += 24;
     }
 
-    // Footer
+    // Footer separator
+    const footerHeight = 60;
+    const footerY = exportHeight - footerHeight;
+    ctx.beginPath();
+    ctx.moveTo(20, footerY);
+    ctx.lineTo(exportWidth - 20, footerY);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#ccc";
+    ctx.stroke();
+
+    // Footer: Date/Time
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -1537,38 +1537,24 @@ function exportSummary() {
     const hh = String(now.getHours()).padStart(2, '0');
     const min = String(now.getMinutes()).padStart(2, '0');
     const datePart = `${dd}-${mm}-${yyyy}`;
-    const timePart = `${hh}.${min}`;
-    const footerText = `Exported on ${datePart} at ${timePart}`;
-
-    // Draw footer separator
-    ctx.beginPath();
-    ctx.moveTo(0, exportHeight - 60);
-    ctx.lineTo(exportWidth, exportHeight - 60);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "#ccc";
-    ctx.stroke();
-
-    // Footer background
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, exportHeight - 60, exportWidth, 60);
-
-    // Footer timestamp
-    ctx.fillStyle = "#000";
+    const timePart = `${hh}:${min}`;
     ctx.font = "12px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(footerText, 20, exportHeight - 30);
+    ctx.fillStyle = "#000";
+    ctx.fillText(`Exported on ${datePart} at ${timePart}`, 20, exportHeight - 20);
 
-    // Footer logo
+    // Footer: Logo
     const logo = new Image();
     logo.onload = () => {
-      const logoWidth = 100;
-      const logoHeight = 30;
+      const desiredHeight = 30;
+      const aspectRatio = 938 / 145;
+      const logoWidth = desiredHeight * aspectRatio;
       const logoX = exportWidth - logoWidth - 20;
-      const logoY = exportHeight - 45;
-      ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+      const logoY = exportHeight - 20 - desiredHeight;
 
-      // Save after logo is drawn
-      let fileName = `Export Summary - ${styleName} - ${datePart} at ${timePart}.jpg`;
+      ctx.drawImage(logo, logoX, logoY, logoWidth, desiredHeight);
+
+      // Save image after logo loads
+      let fileName = `Export Summary - ${styleName} - ${datePart} at ${hh}.${min}.jpg`;
       fileName = fileName.replace(/[\/\\?%*:|"<>]/g, "-");
 
       const dataURL = compositeCanvas.toDataURL("image/jpeg", 0.95);
@@ -1582,9 +1568,10 @@ function exportSummary() {
       state.currentView = originalView;
       updateCanvasPreview();
     };
-    logo.src = "https://crs-kd.github.io/door-designer/logo-blue.png";
+    logo.src = "./assets/logo-blue.png"; // Or secure remote URL if hosted
   }, 100);
 }
+
 /*
    ---------------------------------------------
    Handling Thumbnail Clicks
