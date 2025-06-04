@@ -1419,6 +1419,7 @@ async function exportSummary() {
 
   const exportWidth = 595.276;
   const exportHeight = 841.89;
+  const margin = 40;
   const imageMaxHeight = exportHeight / 2;
 
   // Force external view
@@ -1427,24 +1428,35 @@ async function exportSummary() {
   updateCanvasPreview();
 
   setTimeout(() => {
-    // Draw the canvas image
+    const jpegData = previewCanvas.toDataURL("image/jpeg", 0.95);
+
+    // Scale and position image
     const scale = Math.min(
-      exportWidth / previewCanvas.width,
+      (exportWidth - 2 * margin) / previewCanvas.width,
       imageMaxHeight / previewCanvas.height
     );
     const scaledWidth = previewCanvas.width * scale;
     const scaledHeight = previewCanvas.height * scale;
     const imageX = (exportWidth - scaledWidth) / 2;
-    const imageY = 20;
+    const imageY = 80;
 
-    const jpegData = previewCanvas.toDataURL("image/jpeg", 0.95);
+    // Header
+    pdf.setFont("Helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text("Summary", margin, 40);
+
+    pdf.setDrawColor(180);
+    pdf.setLineWidth(1);
+    pdf.line(margin, 50, exportWidth - margin, 50);
+
+    // Door preview image
     pdf.addImage(jpegData, "JPEG", imageX, imageY, scaledWidth, scaledHeight);
 
-    // Line between image and text
+    // Line below image
     const lineY = imageY + scaledHeight + 30;
     pdf.setDrawColor(180);
     pdf.setLineWidth(1);
-    pdf.line(40, lineY, exportWidth - 40, lineY);
+    pdf.line(margin, lineY, exportWidth - margin, lineY);
 
     // Gather and format data
     const configObj = configurations.find(c => c.value === state.selectedConfiguration);
@@ -1485,8 +1497,8 @@ async function exportSummary() {
     ];
 
     let textY = lineY + 30;
-    const labelX = 40;
-    const valueX = 160;
+    const labelX = margin;
+    const valueX = labelX + 120;
 
     for (const [label, value] of summaryItems) {
       pdf.setFont("Helvetica", "bold");
@@ -1498,7 +1510,7 @@ async function exportSummary() {
       textY += 20;
     }
 
-    // Footer
+    // Footer with time on right
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -1506,15 +1518,19 @@ async function exportSummary() {
     const hh = String(now.getHours()).padStart(2, '0');
     const min = String(now.getMinutes()).padStart(2, '0');
     const dateTime = `${dd}-${mm}-${yyyy} | ${hh}:${min}`;
+
+    pdf.setDrawColor(180);
+    pdf.setLineWidth(1);
+    pdf.line(margin, exportHeight - 60, exportWidth - margin, exportHeight - 60);
+
     pdf.setFontSize(10);
     pdf.setTextColor(100);
-    pdf.text(dateTime, 40, exportHeight - 30);
+    pdf.text(dateTime, exportWidth - margin, exportHeight - 30, { align: "right" });
 
     // Save file
     const fileName = `Export Summary - ${styleName} - ${dd}-${mm}-${yyyy} at ${hh}.${min}.pdf`;
     pdf.save(fileName.replace(/[\/\\?%*:|"<>]/g, "-"));
 
-    // Restore original view
     state.currentView = originalView;
     updateCanvasPreview();
   }, 100);
