@@ -1545,7 +1545,7 @@ function exportSummary() {
     // Footer: Logo
     const logo = new Image();
     logo.onload = () => {
-      const desiredHeight = 30;
+      const desiredHeight = 18;
       const aspectRatio = 938 / 145;
       const logoWidth = desiredHeight * aspectRatio;
       const logoX = exportWidth - logoWidth - 20;
