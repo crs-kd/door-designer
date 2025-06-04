@@ -1403,53 +1403,57 @@ function compositeAndSaveVisualiser() {
    ---------------------------------------------
 */
 
-function exportSummary() {
+async function exportSummaryToPDF() {
   const previewCanvas = document.getElementById("previewCanvas");
   if (!previewCanvas) {
     console.error("Preview canvas not found");
     return;
   }
 
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "pt",
+    format: [595.276, 841.89] // A4 size in points
+  });
+
+  const exportWidth = 595.276;
+  const exportHeight = 841.89;
+  const imageMaxHeight = exportHeight / 2;
+
+  // Re-render external view
   const originalView = state.currentView;
   state.currentView = "external";
   updateCanvasPreview();
 
   setTimeout(() => {
-    const exportWidth = 595.276;
-    const exportHeight = 841.89;
-    const imageMaxHeight = exportHeight / 2;
-
-    const compositeCanvas = document.createElement("canvas");
-    compositeCanvas.width = exportWidth;
-    compositeCanvas.height = exportHeight;
-
-    const ctx = compositeCanvas.getContext("2d");
-    ctx.fillStyle = "#fff"; // White background
-    ctx.fillRect(0, 0, exportWidth, exportHeight);
-
-    // --- Image Drawing ---
     const scale = Math.min(
       exportWidth / previewCanvas.width,
       imageMaxHeight / previewCanvas.height
     );
     const scaledWidth = previewCanvas.width * scale;
     const scaledHeight = previewCanvas.height * scale;
+
     const imageX = (exportWidth - scaledWidth) / 2;
     const imageY = 20;
 
-    ctx.drawImage(previewCanvas, imageX, imageY, scaledWidth, scaledHeight);
+    // Convert canvas to image
+    const jpegData = previewCanvas.toDataURL("image/jpeg", 0.95);
+    pdf.addImage(jpegData, "JPEG", imageX, imageY, scaledWidth, scaledHeight);
 
-    // --- Text Setup ---
+    // Generate text content
+    const configObj = configurations.find(c => c.value === state.selectedConfiguration);
+    const configurationName = configObj?.name || state.selectedConfiguration || "Configuration";
+
     const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
-    const rawStyle = state.selectedStyle || "None";
+    const rawStyle = state.selectedStyle || "door";
     const styleName = toTitleCase(styleDisplayNames?.[rawStyle] || rawStyle);
-    const configName = configurations.find(c => c.value === state.selectedConfiguration)?.name || "None";
-    const glazingName = toTitleCase(glazingDisplayNames?.[state.selectedGlazing] || state.selectedGlazing || "None");
-    const sidescreenStyle = toTitleCase(sidescreenStyleDefs?.[state.selectedSidescreenStyle]?.name || state.selectedSidescreenStyle || "None");
-    const sidescreenGlazing = toTitleCase(glazingDisplayNames?.[state.selectedSidescreenGlazing] || state.selectedSidescreenGlazing || "None");
-    const externalColour = toTitleCase(state.selectedExternalFinish || "None");
-    const internalColour = toTitleCase(state.selectedInternalFinish || "None");
-    const hardwareColour = toTitleCase(state.selectedHardwareColor || "None");
+    const glazingName = toTitleCase(glazingDisplayNames?.[state.selectedGlazing] || state.selectedGlazing || "glass");
+    const sidescreenStyle = toTitleCase(state.selectedSidescreenStyle || "None");
+    const sidescreenGlazing = toTitleCase(state.selectedSidescreenGlazing || "None");
+    const externalColour = toTitleCase(state.selectedExternalFinish || "colour");
+    const internalColour = toTitleCase(state.selectedInternalFinish || "colour");
+    const hardwareColour = toTitleCase(state.selectedHardwareColor || "colour");
 
     let originalLetterplateKey = "none";
     if (styleObj && state.selectedLetterplate) {
@@ -1458,99 +1462,48 @@ function exportSummary() {
       );
       originalLetterplateKey = entry ? entry[0] : state.selectedLetterplate;
     }
-
     const letterplateText = toTitleCase(letterplateDisplayNames?.[originalLetterplateKey] || originalLetterplateKey);
     const handleText = toTitleCase(handleDisplayNames?.[state.selectedHandle] || state.selectedHandle || "None");
 
-    // --- Summary Separator Line ---
-    const lineY = imageY + scaledHeight + 40;
-    ctx.beginPath();
-    ctx.moveTo(20, lineY);
-    ctx.lineTo(exportWidth - 20, lineY);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "#ccc";
-    ctx.stroke();
-
-    // --- Summary Items ---
-    const summaryItems = [
-      ["Configuration", configName],
-      ["Panel", styleName],
-      ["Glazing", glazingName],
-      ["Sidescreen", sidescreenStyle],
-      ["Sidescreen Glazing", sidescreenGlazing],
-      ["External Colour", externalColour],
-      ["Internal Colour", internalColour],
-      ["Hardware Colour", hardwareColour],
-      ["Letterplate", letterplateText],
-      ["Handle", handleText]
+    const summaryLines = [
+      `Configuration: ${configurationName}`,
+      `Panel: ${styleName}`,
+      `Glazing: ${glazingName}`,
+      `Sidescreen: ${sidescreenStyle}`,
+      `Sidescreen Glazing: ${sidescreenGlazing}`,
+      `External Colour: ${externalColour}`,
+      `Internal Colour: ${internalColour}`,
+      `Hardware Colour: ${hardwareColour}`,
+      `Letterplate: ${letterplateText}`,
+      `Handle: ${handleText}`
     ];
 
-    ctx.fillStyle = "#000";
-    ctx.textAlign = "left";
-
-    const labelX = 20;
-    const valueX = 170;
-    let textY = lineY + 30;
-
-    for (const [label, value] of summaryItems) {
-      ctx.font = "bold 14px sans-serif";
-      ctx.fillText(`${label}:`, labelX, textY);
-      ctx.font = "14px sans-serif";
-      ctx.fillText(value, valueX, textY);
-      textY += 24;
+    let textY = imageY + scaledHeight + 40;
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    for (let line of summaryLines) {
+      pdf.text(line, 40, textY);
+      textY += 20;
     }
 
-    // --- Footer Line ---
-    const footerHeight = 60;
-    const footerY = exportHeight - footerHeight;
-    ctx.beginPath();
-    ctx.moveTo(20, footerY);
-    ctx.lineTo(exportWidth - 20, footerY);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "#ccc";
-    ctx.stroke();
-
-    // --- Footer Date ---
+    // Footer with timestamp
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yyyy = now.getFullYear();
     const hh = String(now.getHours()).padStart(2, '0');
     const min = String(now.getMinutes()).padStart(2, '0');
-    const datePart = `${dd}-${mm}-${yyyy}`;
-    const timePart = `${hh}:${min}`;
-    ctx.font = "12px sans-serif";
-    ctx.fillStyle = "#000";
-    ctx.fillText(`${datePart} | ${timePart}`, 20, exportHeight - 20);
+    const dateTime = `${dd}-${mm}-${yyyy} | ${hh}:${min}`;
+    pdf.setFontSize(10);
+    pdf.setTextColor(100);
+    pdf.text(dateTime, 40, exportHeight - 30);
 
-    // --- Footer Logo ---
-    const logo = new Image();
-    logo.onload = () => {
-      const desiredHeight = 18;
-      const aspectRatio = 938 / 145;
-      const logoWidth = desiredHeight * aspectRatio;
-      const logoX = exportWidth - logoWidth - 20;
-      const logoY = exportHeight - 20 - desiredHeight;
+    // File name and save
+    const fileName = `Export Summary - ${styleName} - ${dd}-${mm}-${yyyy} at ${hh}.${min}.pdf`;
+    pdf.save(fileName.replace(/[\/\\?%*:|"<>]/g, "-"));
 
-      ctx.drawImage(logo, logoX, logoY, logoWidth, desiredHeight);
-
-      let fileName = `Export Summary - ${styleName} - ${datePart} at ${hh}.${min}.jpg`;
-      fileName = fileName.replace(/[\/\\?%*:|"<>]/g, "-");
-
-      const dataURL = compositeCanvas.toDataURL("image/jpeg", 0.95);
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      state.currentView = originalView;
-      updateCanvasPreview();
-    };
-
-    logo.crossOrigin = "anonymous";
-    logo.src = "https://crs-kd.github.io/door-designer/logo-blue.png";
+    state.currentView = originalView;
+    updateCanvasPreview();
   }, 100);
 }
 
