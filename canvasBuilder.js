@@ -1403,27 +1403,6 @@ function compositeAndSaveVisualiser() {
    ---------------------------------------------
 */
 
-function wrapText(text, maxCharsPerLine) {
-  const words = text.split(" ");
-  const lines = [];
-  let currentLine = "";
-
-  for (let word of words) {
-    if ((currentLine + word).length <= maxCharsPerLine) {
-      currentLine += word + " ";
-    } else {
-      lines.push(currentLine.trim());
-      currentLine = word + " ";
-    }
-  }
-
-  if (currentLine.length > 0) {
-    lines.push(currentLine.trim());
-  }
-
-  return lines;
-}
-
 function exportSummary() {
   const previewCanvas = document.getElementById("previewCanvas");
   if (!previewCanvas) {
@@ -1448,7 +1427,7 @@ function exportSummary() {
     ctx.fillStyle = "#fff"; // White background
     ctx.fillRect(0, 0, exportWidth, exportHeight);
 
-    // Scale the door preview image
+    // --- Image Drawing ---
     const scale = Math.min(
       exportWidth / previewCanvas.width,
       imageMaxHeight / previewCanvas.height
@@ -1460,16 +1439,17 @@ function exportSummary() {
 
     ctx.drawImage(previewCanvas, imageX, imageY, scaledWidth, scaledHeight);
 
-    // --- Summary Text ---
+    // --- Text Setup ---
     const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
-    const rawStyle = state.selectedStyle || "door";
+    const rawStyle = state.selectedStyle || "None";
     const styleName = toTitleCase(styleDisplayNames?.[rawStyle] || rawStyle);
-    const configName = configurations.find(c => c.value === state.selectedConfiguration)?.name || "Configuration";
-    const glazingName = toTitleCase(glazingDisplayNames?.[state.selectedGlazing] || state.selectedGlazing || "glass");
-    const sidescreenGlazing = toTitleCase(glazingDisplayNames?.[state.selectedSidescreenGlazing] || state.selectedSidescreenGlazing || "glass");
-    const externalColour = toTitleCase(state.selectedExternalFinish || "colour");
-    const internalColour = toTitleCase(state.selectedInternalFinish || "colour");
-    const hardwareColour = toTitleCase(state.selectedHardwareColor || "colour");
+    const configName = configurations.find(c => c.value === state.selectedConfiguration)?.name || "None";
+    const glazingName = toTitleCase(glazingDisplayNames?.[state.selectedGlazing] || state.selectedGlazing || "None");
+    const sidescreenStyle = toTitleCase(sidescreenStyleDefs?.[state.selectedSidescreenStyle]?.name || state.selectedSidescreenStyle || "None");
+    const sidescreenGlazing = toTitleCase(glazingDisplayNames?.[state.selectedSidescreenGlazing] || state.selectedSidescreenGlazing || "None");
+    const externalColour = toTitleCase(state.selectedExternalFinish || "None");
+    const internalColour = toTitleCase(state.selectedInternalFinish || "None");
+    const hardwareColour = toTitleCase(state.selectedHardwareColor || "None");
 
     let originalLetterplateKey = "none";
     if (styleObj && state.selectedLetterplate) {
@@ -1482,7 +1462,7 @@ function exportSummary() {
     const letterplateText = toTitleCase(letterplateDisplayNames?.[originalLetterplateKey] || originalLetterplateKey);
     const handleText = toTitleCase(handleDisplayNames?.[state.selectedHandle] || state.selectedHandle || "None");
 
-    // Separator line above summary
+    // --- Summary Separator Line ---
     const lineY = imageY + scaledHeight + 40;
     ctx.beginPath();
     ctx.moveTo(20, lineY);
@@ -1491,14 +1471,12 @@ function exportSummary() {
     ctx.strokeStyle = "#ccc";
     ctx.stroke();
 
-    // Draw summary text
-    ctx.fillStyle = "#000";
-    ctx.textAlign = "left";
-
+    // --- Summary Items ---
     const summaryItems = [
       ["Configuration", configName],
       ["Panel", styleName],
       ["Glazing", glazingName],
+      ["Sidescreen", sidescreenStyle],
       ["Sidescreen Glazing", sidescreenGlazing],
       ["External Colour", externalColour],
       ["Internal Colour", internalColour],
@@ -1506,6 +1484,9 @@ function exportSummary() {
       ["Letterplate", letterplateText],
       ["Handle", handleText]
     ];
+
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "left";
 
     const labelX = 20;
     const valueX = 170;
@@ -1519,7 +1500,7 @@ function exportSummary() {
       textY += 24;
     }
 
-    // Footer separator
+    // --- Footer Line ---
     const footerHeight = 60;
     const footerY = exportHeight - footerHeight;
     ctx.beginPath();
@@ -1529,7 +1510,7 @@ function exportSummary() {
     ctx.strokeStyle = "#ccc";
     ctx.stroke();
 
-    // Footer: Date/Time
+    // --- Footer Date ---
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -1542,7 +1523,7 @@ function exportSummary() {
     ctx.fillStyle = "#000";
     ctx.fillText(`Exported on ${datePart} at ${timePart}`, 20, exportHeight - 20);
 
-    // Footer: Logo
+    // --- Footer Logo ---
     const logo = new Image();
     logo.onload = () => {
       const desiredHeight = 18;
@@ -1553,7 +1534,6 @@ function exportSummary() {
 
       ctx.drawImage(logo, logoX, logoY, logoWidth, desiredHeight);
 
-      // Save image after logo loads
       let fileName = `Export Summary - ${styleName} - ${datePart} at ${hh}.${min}.jpg`;
       fileName = fileName.replace(/[\/\\?%*:|"<>]/g, "-");
 
@@ -1568,6 +1548,8 @@ function exportSummary() {
       state.currentView = originalView;
       updateCanvasPreview();
     };
+
+    logo.crossOrigin = "anonymous";
     logo.src = "https://crs-kd.github.io/door-designer/logo-blue.png";
   }, 100);
 }
